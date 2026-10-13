@@ -13,18 +13,20 @@ through the Anthropic API.
 | `tests/` | pytest suites; `tests/live` calls the real API and is opt-in |
 | `examples/` | Task specs with seed files and hidden gate tests |
 | `docs/` | Design notes |
-| `.github/workflows/` | CI: ruff and pytest on every push to `main` and every pull request |
+| `.github/workflows/` | CI for Python, TypeScript and Rust on every push to `main` and every pull request |
+| `ts/` | TypeScript workspace (Node 22, strict, `npm run check`) |
+| `rust/` | Cargo workspace; `crates/urh-core` holds Rust components |
+| `scripts/` | Repo scripts, including the Claude Code cloud SessionStart hook |
 
-TypeScript or Rust components, if added, go in their own top-level folders with their own toolchain config.
+`CLAUDE.md` holds the ground rules every Claude session and Haiku worker follows in this repo.
 
 ## Development
 
 ```bash
-python -m venv .venv && . .venv/bin/activate
-pip install -e '.[dev]'
-ruff check .
-python -m pytest -q                 # offline tests
-python -m pytest -m live tests/live # needs ANTHROPIC_API_KEY
+make setup                          # .venv with the package, npm install, cargo fetch
+make check                          # everything CI runs: Python, TypeScript, Rust
+python -m pytest -m live tests/live # real-model tests; need ANTHROPIC_API_KEY
 ```
 
-Python 3.11 or newer (CI uses 3.12). Lint settings are in `ruff.toml`; editor settings in `.editorconfig`.
+Python 3.11 or newer (CI uses 3.12), Node 22, stable Rust. Lint settings are in `ruff.toml`; editor
+settings in `.editorconfig`.

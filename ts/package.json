@@ -1,0 +1,18 @@
+{
+  "name": "@urh/ts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "TypeScript client and tooling for the Upper-Right Harness",
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "tsc -p tsconfig.json && node --test dist/",
+    "check": "npm run typecheck && npm test"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
+  }
+}
