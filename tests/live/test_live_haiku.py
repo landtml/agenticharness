@@ -14,8 +14,10 @@ from urh.spec import TaskSpec
 
 pytestmark = [
     pytest.mark.live,
-    pytest.mark.skipif(not (os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN")),
-                       reason="needs Anthropic credentials"),
+    pytest.mark.skipif(
+        not (os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN")),
+        reason="needs Anthropic credentials",
+    ),
 ]
 
 EXAMPLE = os.path.join(os.path.dirname(__file__), "..", "..", "examples", "slug", "spec.json")
@@ -31,7 +33,9 @@ def test_haiku_worker_completes_slug_example(tmp_path):
     status = h.run(rid)
     run = h.journal.get_run(rid)
     calls = h.journal.model_calls(rid)
-    print(f"status={status} spent=${run.spent_usd:.4f} calls={len(calls)} "
-          f"cache_read={sum(c['cache_read'] or 0 for c in calls)}")
+    print(
+        f"status={status} spent=${run.spent_usd:.4f} calls={len(calls)} "
+        f"cache_read={sum(c['cache_read'] or 0 for c in calls)}"
+    )
     assert status == "done"
     assert all(c["model"] == "claude-haiku-5-5" for c in calls if c["role"] == "worker")

@@ -24,8 +24,11 @@ def _provider(name: str) -> Provider:
 
 
 def _harness(args: argparse.Namespace) -> Harness:
-    cfg = HarnessConfig(lease_ttl=args.lease_ttl, heartbeat_s=args.heartbeat,
-                        provider_backoff_s=float(os.environ.get("URH_BACKOFF_S", "2.0")))
+    cfg = HarnessConfig(
+        lease_ttl=args.lease_ttl,
+        heartbeat_s=args.heartbeat,
+        provider_backoff_s=float(os.environ.get("URH_BACKOFF_S", "2.0")),
+    )
     return Harness(args.home, _provider(args.provider), config=cfg)
 
 
@@ -80,23 +83,56 @@ def main(argv: list[str] | None = None) -> int:
     elif args.cmd == "status":
         runs = [j.get_run(args.run_id)] if args.run_id else j.list_runs()
         for run in runs:
-            print(json.dumps({
-                "id": run.id, "status": run.status, "reason": run.status_reason, "step": run.step_index,
-                "spent_usd": round(run.spent_usd, 6), "budget_usd": run.budget_usd,
-                "verified_commit": run.verified_commit,
-            }))
+            print(
+                json.dumps(
+                    {
+                        "id": run.id,
+                        "status": run.status,
+                        "reason": run.status_reason,
+                        "step": run.step_index,
+                        "spent_usd": round(run.spent_usd, 6),
+                        "budget_usd": run.budget_usd,
+                        "verified_commit": run.verified_commit,
+                    }
+                )
+            )
     elif args.cmd == "parks":
         for pk in j.parks(status="open"):
-            print(json.dumps({"id": pk["id"], "run_id": pk["run_id"], "reason": pk["reason"],
-                              "question": pk["question"]}))
+            print(
+                json.dumps(
+                    {
+                        "id": pk["id"],
+                        "run_id": pk["run_id"],
+                        "reason": pk["reason"],
+                        "question": pk["question"],
+                    }
+                )
+            )
     elif args.cmd == "answer":
         print(j.answer_park(args.park_id, args.text))
     elif args.cmd == "add-budget":
         j.add_budget(args.run_id, args.amount)
     elif args.cmd == "calls":
         for call in j.model_calls(args.run_id):
-            print(json.dumps({k: call[k] for k in ("step_index", "attempt", "call_index", "role", "model", "status",
-                                                   "cost_usd", "input_tokens", "output_tokens", "cache_read")}))
+            print(
+                json.dumps(
+                    {
+                        k: call[k]
+                        for k in (
+                            "step_index",
+                            "attempt",
+                            "call_index",
+                            "role",
+                            "model",
+                            "status",
+                            "cost_usd",
+                            "input_tokens",
+                            "output_tokens",
+                            "cache_read",
+                        )
+                    }
+                )
+            )
     return 0
 
 

@@ -33,9 +33,9 @@ class Fence:
 
 class EffectAdapter(Protocol):
     kind: str
-    keyed: bool          # the receiver deduplicates on our key
-    readable: bool       # we can ask the receiver whether the key already landed
-    irreversible: bool   # a mistake cannot be undone: needs a policy or a person
+    keyed: bool  # the receiver deduplicates on our key
+    readable: bool  # we can ask the receiver whether the key already landed
+    irreversible: bool  # a mistake cannot be undone: needs a policy or a person
 
     def dispatch(self, key: str, payload: dict[str, Any], fence: Fence) -> Any: ...
 
@@ -122,8 +122,11 @@ class WebhookAdapter:
         req = urllib.request.Request(
             url,
             data=json.dumps(payload.get("body", {})).encode(),
-            headers={"Content-Type": "application/json", "Idempotency-Key": key,
-                     "X-Fencing-Token": f"{fence.run_id}:{fence.epoch}"},
+            headers={
+                "Content-Type": "application/json",
+                "Idempotency-Key": key,
+                "X-Fencing-Token": f"{fence.run_id}:{fence.epoch}",
+            },
             method="POST",
         )
         with urllib.request.urlopen(req, timeout=self.timeout) as resp:  # noqa: S310 (allowlisted)
@@ -151,7 +154,7 @@ class UnkeyedCommandAdapter:
 @dataclass
 class FlushResult:
     done: list[str] = field(default_factory=list)
-    parked: list[tuple[str, str]] = field(default_factory=list)   # (key, reason)
+    parked: list[tuple[str, str]] = field(default_factory=list)  # (key, reason)
 
 
 class EffectGuard:
@@ -162,13 +165,16 @@ class EffectGuard:
     def register(self, adapter: EffectAdapter) -> None:
         self.adapters[adapter.kind] = adapter
 
-    def propose(self, run_id: str, epoch: int, step_index: int, effect_index: int, kind: str,
-                payload: dict[str, Any]) -> str:
+    def propose(
+        self, run_id: str, epoch: int, step_index: int, effect_index: int, kind: str, payload: dict[str, Any]
+    ) -> str:
         key = effect_key(run_id, step_index, effect_index)
         self.journal.propose_effect(run_id, epoch, key, step_index, effect_index, kind, payload)
         return key
 
-    def flush(self, run_id: str, epoch: int, step_index: int, approved: set[str] | None = None) -> FlushResult:
+    def flush(
+        self, run_id: str, epoch: int, step_index: int, approved: set[str] | None = None
+    ) -> FlushResult:
         """Dispatch this step's held effects. Call only after the step's gate passed."""
         approved = approved or set()
         result = FlushResult()
@@ -183,7 +189,9 @@ class EffectGuard:
                 continue
             adapter = self.adapters.get(eff["kind"])
             if adapter is None:
-                self.journal.mark_effect(run_id, epoch, key, "parked", {"reason": f"no adapter for {eff['kind']}"})
+                self.journal.mark_effect(
+                    run_id, epoch, key, "parked", {"reason": f"no adapter for {eff['kind']}"}
+                )
                 result.parked.append((key, f"no adapter for {eff['kind']}"))
                 continue
             if (adapter.irreversible or eff["payload"].get("irreversible")) and key not in approved:
@@ -203,7 +211,9 @@ class EffectGuard:
                         result.done.append(key)
                         continue
                 if not adapter.keyed:
-                    self.journal.mark_effect(run_id, epoch, key, "parked", {"reason": "in-flight, unverifiable"})
+                    self.journal.mark_effect(
+                        run_id, epoch, key, "parked", {"reason": "in-flight, unverifiable"}
+                    )
                     result.parked.append((key, "dispatch outcome unknown and receiver has no key"))
                     continue
             self.journal.mark_effect(run_id, epoch, key, "dispatching")
@@ -217,7 +227,9 @@ class EffectGuard:
                     self.journal.mark_effect(run_id, epoch, key, "done", seen)
                     result.done.append(key)
                     continue
-                self.journal.mark_effect(run_id, epoch, key, "parked", {"reason": f"dispatch failed: {e!r}"[:500]})
+                self.journal.mark_effect(
+                    run_id, epoch, key, "parked", {"reason": f"dispatch failed: {e!r}"[:500]}
+                )
                 result.parked.append((key, f"dispatch failed: {e!r}"[:200]))
                 continue
             self.journal.mark_effect(run_id, epoch, key, "done", out)

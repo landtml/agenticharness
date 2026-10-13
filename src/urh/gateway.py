@@ -34,12 +34,12 @@ class Price:
     input: float
     output: float
     cache_read: float
-    long_input: float | None = None     # price tier above ``long_threshold`` prompt tokens
+    long_input: float | None = None  # price tier above ``long_threshold`` prompt tokens
     long_output: float | None = None
     long_threshold: int = 100_000
 
     @property
-    def cache_write(self) -> float:      # 5-minute TTL write premium
+    def cache_write(self) -> float:  # 5-minute TTL write premium
         return self.input * 1.25
 
 
@@ -138,7 +138,7 @@ class CircuitBreaker:
             if self.opened_at is None:
                 return True
             if time.monotonic() - self.opened_at >= self.cooldown_s:
-                self.opened_at = None   # half-open: let one call through
+                self.opened_at = None  # half-open: let one call through
                 self.failures = self.threshold - 1
                 return True
             return False
@@ -160,7 +160,7 @@ class CallContext:
     epoch: int
     step_index: int
     attempt: int
-    role: str          # manager | worker | judge
+    role: str  # manager | worker | judge
     call_index: int
 
 
@@ -185,11 +185,16 @@ class ModelGateway:
 
     @staticmethod
     def default_pins() -> dict[str, Any]:
-        return {"provider": PROVIDER, "models": {"manager": MANAGER_MODEL, "worker": WORKER_MODEL, "judge": WORKER_MODEL}}
+        return {
+            "provider": PROVIDER,
+            "models": {"manager": MANAGER_MODEL, "worker": WORKER_MODEL, "judge": WORKER_MODEL},
+        }
 
     def call(self, ctx: CallContext, pins: dict[str, Any], request: dict[str, Any]) -> ProviderResponse:
         if pins.get("provider") != self.provider.name:
-            raise RuntimeError(f"run pinned to provider {pins.get('provider')!r}, gateway serves {self.provider.name!r}")
+            raise RuntimeError(
+                f"run pinned to provider {pins.get('provider')!r}, gateway serves {self.provider.name!r}"
+            )
         model = pins["models"][ctx.role]
         request = {**request, "model": model}
         reservation = estimate_reservation(model, request)
@@ -198,8 +203,13 @@ class ModelGateway:
             ctx.run_id,
             ctx.epoch,
             {
-                "step_index": ctx.step_index, "attempt": ctx.attempt, "call_index": ctx.call_index,
-                "role": ctx.role, "provider": self.provider.name, "model": model, "request_blob": request_blob,
+                "step_index": ctx.step_index,
+                "attempt": ctx.attempt,
+                "call_index": ctx.call_index,
+                "role": ctx.role,
+                "provider": self.provider.name,
+                "model": model,
+                "request_blob": request_blob,
             },
             reservation,
         )
@@ -224,8 +234,12 @@ class ModelGateway:
             latency = int((time.monotonic() - t0) * 1000)
             if resp.model and resp.model != model and not resp.model.startswith(model):
                 # A silent substitution is a version change; do not accept it as the pinned model's work.
-                self.journal.settle(call_id, cost_usd(model, resp.usage), {"error": f"model drift: {resp.model}"},
-                                    status="error")
+                self.journal.settle(
+                    call_id,
+                    cost_usd(model, resp.usage),
+                    {"error": f"model drift: {resp.model}"},
+                    status="error",
+                )
                 raise ProviderDown(f"provider served {resp.model} for pinned {model}")
             cost = cost_usd(model, resp.usage)
             self.journal.settle(
@@ -239,7 +253,12 @@ class ModelGateway:
                     "latency_ms": latency,
                     "stop_reason": resp.stop_reason,
                     "response_blob": self.blobs.put_json(
-                        {"content": resp.content, "stop_reason": resp.stop_reason, "usage": resp.usage, "model": resp.model}
+                        {
+                            "content": resp.content,
+                            "stop_reason": resp.stop_reason,
+                            "usage": resp.usage,
+                            "model": resp.model,
+                        }
                     ),
                 },
             )

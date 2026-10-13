@@ -41,7 +41,7 @@ class Check:
 @dataclass
 class GateSpec:
     checks: list[Check] = field(default_factory=list)
-    hidden_dir: str | None = None          # copied into the gate's checkout as ``_hidden``; never into the workspace
+    hidden_dir: str | None = None  # copied into the gate's checkout as ``_hidden``; never into the workspace
     protected: list[str] = field(default_factory=list)  # path prefixes the worker may not change
 
 
@@ -49,8 +49,8 @@ class GateSpec:
 class StepSpec:
     title: str
     instructions: str
-    files: list[str] = field(default_factory=list)   # the files this step is expected to write
-    checks: list[str] | None = None                  # names of gate checks; None means all
+    files: list[str] = field(default_factory=list)  # the files this step is expected to write
+    checks: list[str] | None = None  # names of gate checks; None means all
     effects: list[dict[str, Any]] = field(default_factory=list)  # outward actions after the step verifies
     irreversible: bool = False
 
@@ -98,8 +98,10 @@ class TaskSpec:
 
         g = d.get("gate", {})
         gate = GateSpec(
-            checks=[Check(name=c["name"], cmd=list(c["cmd"]), timeout=float(c.get("timeout", 120)))
-                    for c in g.get("checks", [])],
+            checks=[
+                Check(name=c["name"], cmd=list(c["cmd"]), timeout=float(c.get("timeout", 120)))
+                for c in g.get("checks", [])
+            ],
             hidden_dir=_abs(g.get("hidden_dir")),
             protected=list(g.get("protected", [])),
         )

@@ -68,17 +68,25 @@ def test_haiku_cost_at_base_rates():
 
 def test_haiku_long_prompt_tier_applies_above_100k():
     # Above 100k prompt tokens Haiku 5.5 is billed at $0.50 / $2.50 per MTok.
-    assert cost_usd("claude-haiku-5-5", {"input_tokens": 1_000_000, "output_tokens": 1_000_000}) == pytest.approx(3.00)
-    assert cost_usd("claude-haiku-5-5", {"input_tokens": 100_000, "output_tokens": 1_000_000}) == pytest.approx(0.51)
+    assert cost_usd(
+        "claude-haiku-5-5", {"input_tokens": 1_000_000, "output_tokens": 1_000_000}
+    ) == pytest.approx(3.00)
+    assert cost_usd(
+        "claude-haiku-5-5", {"input_tokens": 100_000, "output_tokens": 1_000_000}
+    ) == pytest.approx(0.51)
 
 
 def test_opus_million_in_million_out_costs_24():
-    assert cost_usd("claude-opus-5-5", {"input_tokens": 1_000_000, "output_tokens": 1_000_000}) == pytest.approx(24.0)
+    assert cost_usd(
+        "claude-opus-5-5", {"input_tokens": 1_000_000, "output_tokens": 1_000_000}
+    ) == pytest.approx(24.0)
 
 
 def test_cache_read_is_priced_per_model():
     assert cost_usd("claude-opus-5-5", {"cache_read_input_tokens": 1_000_000}) == pytest.approx(0.20)
-    assert cost_usd("claude-haiku-5-5", {"cache_read_input_tokens": 1_000}) == pytest.approx(0.01 * 1_000 / 1e6)
+    assert cost_usd("claude-haiku-5-5", {"cache_read_input_tokens": 1_000}) == pytest.approx(
+        0.01 * 1_000 / 1e6
+    )
 
 
 def test_successful_call_is_logged_and_settled(j, blobs):

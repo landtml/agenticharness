@@ -1,0 +1,6 @@
+[package]
+name = "urh-core"
+description = "Rust components of the Upper-Right Harness"
+version.workspace = true
+edition.workspace = true
+publish = false

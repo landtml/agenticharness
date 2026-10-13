@@ -36,8 +36,14 @@ class GitCheckpoint:
         self.git_dir = os.path.join(self.run_dir, "repo.git")
 
     # ------------------------------------------------------------------ helpers
-    def _git(self, *args: str, work_tree: str | None = None, index: str | None = None,
-             input_bytes: bytes | None = None, check: bool = True) -> bytes:
+    def _git(
+        self,
+        *args: str,
+        work_tree: str | None = None,
+        index: str | None = None,
+        input_bytes: bytes | None = None,
+        check: bool = True,
+    ) -> bytes:
         env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
         env.update(_IDENT)
         env["GIT_DIR"] = self.git_dir
@@ -45,10 +51,13 @@ class GitCheckpoint:
             env["GIT_WORK_TREE"] = work_tree
         if index is not None:
             env["GIT_INDEX_FILE"] = index
-        proc = subprocess.run(["git", *args], env=env, input=input_bytes, capture_output=True,
-                              cwd=work_tree or self.run_dir)
+        proc = subprocess.run(
+            ["git", *args], env=env, input=input_bytes, capture_output=True, cwd=work_tree or self.run_dir
+        )
         if check and proc.returncode != 0:
-            raise CheckpointError(f"git {' '.join(args)} failed: {proc.stderr.decode(errors='replace').strip()}")
+            raise CheckpointError(
+                f"git {' '.join(args)} failed: {proc.stderr.decode(errors='replace').strip()}"
+            )
         return proc.stdout
 
     def _index(self, epoch: int) -> str:

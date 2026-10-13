@@ -40,22 +40,34 @@ def test_lease_is_exclusive_until_expiry_and_fences_old_holder(j):
 def test_budget_reservation_denies_overrun_and_counts_denials(j):
     rid = _run(j, budget=0.01)
     epoch = j.acquire_lease(rid, "p", 10)
-    call = {"step_index": 0, "attempt": 1, "call_index": 0, "role": "worker", "provider": "anthropic",
-            "model": "claude-haiku-5-5"}
+    call = {
+        "step_index": 0,
+        "attempt": 1,
+        "call_index": 0,
+        "role": "worker",
+        "provider": "anthropic",
+        "model": "claude-haiku-5-5",
+    }
     cid = j.reserve(rid, epoch, call, 0.008)
     with pytest.raises(BudgetExceeded):
         j.reserve(rid, epoch, call, 0.005)
     j.settle(cid, 0.001, {"input_tokens": 10})
     run = j.get_run(rid)
     assert run.reserved_usd == pytest.approx(0) and run.spent_usd == pytest.approx(0.001) and run.denials == 1
-    j.reserve(rid, epoch, call, 0.005)   # fits after settling
+    j.reserve(rid, epoch, call, 0.005)  # fits after settling
 
 
 def test_stale_reservations_are_written_off_on_resume(j):
     rid = _run(j)
     e1 = j.acquire_lease(rid, "p", 10)
-    call = {"step_index": 0, "attempt": 1, "call_index": 0, "role": "worker", "provider": "anthropic",
-            "model": "claude-haiku-5-5"}
+    call = {
+        "step_index": 0,
+        "attempt": 1,
+        "call_index": 0,
+        "role": "worker",
+        "provider": "anthropic",
+        "model": "claude-haiku-5-5",
+    }
     j.reserve(rid, e1, call, 0.003)
     e2 = j.acquire_lease(rid, "p", 10)
     assert j.release_stale_reservations(rid, e2) == pytest.approx(0.003)

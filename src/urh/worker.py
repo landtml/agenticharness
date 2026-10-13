@@ -18,44 +18,67 @@ TOOLS: list[dict[str, Any]] = [
     {
         "name": "bash",
         "description": "Run a shell command in the project folder (no network). Returns exit code, stdout and stderr.",
-        "input_schema": {"type": "object", "properties": {"command": {"type": "string"}},
-                         "required": ["command"], "additionalProperties": False},
+        "input_schema": {
+            "type": "object",
+            "properties": {"command": {"type": "string"}},
+            "required": ["command"],
+            "additionalProperties": False,
+        },
         "strict": True,
     },
     {
         "name": "read_file",
         "description": "Read a text file from the project folder.",
-        "input_schema": {"type": "object", "properties": {"path": {"type": "string"}},
-                         "required": ["path"], "additionalProperties": False},
+        "input_schema": {
+            "type": "object",
+            "properties": {"path": {"type": "string"}},
+            "required": ["path"],
+            "additionalProperties": False,
+        },
         "strict": True,
     },
     {
         "name": "write_file",
         "description": "Create or overwrite a text file in the project folder.",
-        "input_schema": {"type": "object", "properties": {"path": {"type": "string"}, "content": {"type": "string"}},
-                         "required": ["path", "content"], "additionalProperties": False},
+        "input_schema": {
+            "type": "object",
+            "properties": {"path": {"type": "string"}, "content": {"type": "string"}},
+            "required": ["path", "content"],
+            "additionalProperties": False,
+        },
         "strict": True,
     },
     {
         "name": "list_files",
         "description": "List files under a folder of the project (default: the whole project).",
-        "input_schema": {"type": "object", "properties": {"path": {"type": "string"}},
-                         "required": ["path"], "additionalProperties": False},
+        "input_schema": {
+            "type": "object",
+            "properties": {"path": {"type": "string"}},
+            "required": ["path"],
+            "additionalProperties": False,
+        },
         "strict": True,
     },
     {
         "name": "propose_effect",
         "description": "Queue an outward action (message, webhook, deploy). It fires once, only after this step verifies.",
-        "input_schema": {"type": "object",
-                         "properties": {"kind": {"type": "string"}, "payload_json": {"type": "string"}},
-                         "required": ["kind", "payload_json"], "additionalProperties": False},
+        "input_schema": {
+            "type": "object",
+            "properties": {"kind": {"type": "string"}, "payload_json": {"type": "string"}},
+            "required": ["kind", "payload_json"],
+            "additionalProperties": False,
+        },
         "strict": True,
     },
     {
         "name": "finish",
         "description": "Declare the step's work complete. The hidden checks then decide.",
-        "input_schema": {"type": "object", "properties": {"summary": {"type": "string"}},
-                         "required": ["summary"], "additionalProperties": False},
+        "input_schema": {
+            "type": "object",
+            "properties": {"summary": {"type": "string"}},
+            "required": ["summary"],
+            "additionalProperties": False,
+        },
         "strict": True,
     },
 ]
@@ -85,7 +108,7 @@ class Workspace:
     def _resolve(self, rel: str) -> str:
         rel = rel.strip() or "."
         if rel.startswith("/work"):
-            rel = rel[len("/work"):].lstrip("/") or "."
+            rel = rel[len("/work") :].lstrip("/") or "."
         path = os.path.realpath(os.path.join(self.root, rel))
         if path != self.root and not path.startswith(self.root + os.sep):
             raise PathEscape(f"path is outside the project folder: {rel}")
@@ -95,8 +118,9 @@ class Workspace:
         return text.replace(self.root, "/work")
 
     def bash(self, command: str) -> str:
-        r = sandbox.run(command, cwd=self.root, timeout=self.command_timeout,
-                        env=sandbox.scrubbed_env(self.root))
+        r = sandbox.run(
+            command, cwd=self.root, timeout=self.command_timeout, env=sandbox.scrubbed_env(self.root)
+        )
         out = f"exit={r.returncode}{' (timed out)' if r.timed_out else ''}\n--- stdout\n{r.stdout}\n--- stderr\n{r.stderr}"
         return self._hide(out)[:MAX_TOOL_OUTPUT]
 
@@ -153,13 +177,17 @@ class Worker:
         stop: str | None = None
         for turn in range(max_turns):
             ctx = CallContext(run_id, epoch, step_index, attempt, "worker", turn)
-            resp = self.gateway.call(ctx, pins, {
-                "max_tokens": WORKER_MAX_TOKENS,
-                "system": system,
-                "tools": TOOLS,
-                "messages": messages,
-                "output_config": {"effort": self.effort},
-            })
+            resp = self.gateway.call(
+                ctx,
+                pins,
+                {
+                    "max_tokens": WORKER_MAX_TOKENS,
+                    "system": system,
+                    "tools": TOOLS,
+                    "messages": messages,
+                    "output_config": {"effort": self.effort},
+                },
+            )
             stop = resp.stop_reason
             messages.append({"role": "assistant", "content": resp.content})
             tool_uses = [b for b in resp.content if b.get("type") == "tool_use"]
@@ -190,13 +218,24 @@ class Worker:
                         raise ValueError(f"unknown tool {name}")
                     results.append({"type": "tool_result", "tool_use_id": tu["id"], "content": text})
                 except (KeyError, ValueError, OSError, json.JSONDecodeError) as e:
-                    results.append({"type": "tool_result", "tool_use_id": tu["id"], "is_error": True,
-                                    "content": f"error: {e}"[:1000]})
+                    results.append(
+                        {
+                            "type": "tool_result",
+                            "tool_use_id": tu["id"],
+                            "is_error": True,
+                            "content": f"error: {e}"[:1000],
+                        }
+                    )
             if finished is not None:
                 return WorkerOutcome(True, finished, turn + 1, stop, effects)
             if stop == "max_tokens":
                 # Cut-off reply: answer any complete tool calls and ask it to carry on, don't quit.
-                results.append({"type": "text", "text": "Your last reply was cut off. Continue from where you stopped, more briefly."})
+                results.append(
+                    {
+                        "type": "text",
+                        "text": "Your last reply was cut off. Continue from where you stopped, more briefly.",
+                    }
+                )
                 messages.append({"role": "user", "content": results})
                 continue
             if stop == "pause_turn":

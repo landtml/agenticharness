@@ -260,7 +260,10 @@ class Journal:
         rows = self._conn.execute(
             "SELECT seq, ts, epoch, kind, data FROM events WHERE run_id=? ORDER BY seq", (run_id,)
         ).fetchall()
-        return [{"seq": r["seq"], "ts": r["ts"], "epoch": r["epoch"], "kind": r["kind"], **json.loads(r["data"])} for r in rows]
+        return [
+            {"seq": r["seq"], "ts": r["ts"], "epoch": r["epoch"], "kind": r["kind"], **json.loads(r["data"])}
+            for r in rows
+        ]
 
     # ------------------------------------------------------------------ runs
     def create_run(
@@ -281,10 +284,24 @@ class Journal:
             c.execute(
                 "INSERT INTO runs(id, dedupe_key, spec_json, pins_json, status, budget_usd, created_at, updated_at)"
                 " VALUES (?,?,?,?,?,?,?,?)",
-                (run_id, dedupe_key, json.dumps(spec, sort_keys=True), json.dumps(pins, sort_keys=True), "queued",
-                 budget_usd, ts, ts),
+                (
+                    run_id,
+                    dedupe_key,
+                    json.dumps(spec, sort_keys=True),
+                    json.dumps(pins, sort_keys=True),
+                    "queued",
+                    budget_usd,
+                    ts,
+                    ts,
+                ),
             )
-            self._event(c, run_id, 0, "run_created", {"dedupe_key": dedupe_key, "budget_usd": budget_usd, "pins": pins})
+            self._event(
+                c,
+                run_id,
+                0,
+                "run_created",
+                {"dedupe_key": dedupe_key, "budget_usd": budget_usd, "pins": pins},
+            )
             return run_id, True
 
     def get_run(self, run_id: str) -> Run:
@@ -297,7 +314,9 @@ class Journal:
         if status is None:
             rows = self._conn.execute("SELECT * FROM runs ORDER BY created_at").fetchall()
         else:
-            rows = self._conn.execute("SELECT * FROM runs WHERE status=? ORDER BY created_at", (status,)).fetchall()
+            rows = self._conn.execute(
+                "SELECT * FROM runs WHERE status=? ORDER BY created_at", (status,)
+            ).fetchall()
         return [Run.from_row(r) for r in rows]
 
     def count_active(self) -> int:
@@ -307,7 +326,9 @@ class Journal:
         return int(row["n"])
 
     def total_spent(self) -> float:
-        row = self._conn.execute("SELECT COALESCE(SUM(spent_usd + reserved_usd), 0) AS s FROM runs").fetchone()
+        row = self._conn.execute(
+            "SELECT COALESCE(SUM(spent_usd + reserved_usd), 0) AS s FROM runs"
+        ).fetchone()
         return float(row["s"])
 
     def set_status(self, run_id: str, epoch: int, status: str, reason: str | None = None) -> None:
@@ -335,7 +356,9 @@ class Journal:
         even if it is still alive.
         """
         with self.tx() as c:
-            row = c.execute("SELECT lease_owner, lease_expires, status FROM runs WHERE id=?", (run_id,)).fetchone()
+            row = c.execute(
+                "SELECT lease_owner, lease_expires, status FROM runs WHERE id=?", (run_id,)
+            ).fetchone()
             if row is None:
                 raise KeyError(run_id)
             if row["status"] in ("done", "failed"):
@@ -348,7 +371,9 @@ class Journal:
                 (owner, now + ttl, now, run_id),
             )
             epoch = c.execute("SELECT lease_epoch FROM runs WHERE id=?", (run_id,)).fetchone()["lease_epoch"]
-            self._event(c, run_id, epoch, "lease_acquired", {"owner": owner, "previous_owner": row["lease_owner"]})
+            self._event(
+                c, run_id, epoch, "lease_acquired", {"owner": owner, "previous_owner": row["lease_owner"]}
+            )
             return int(epoch)
 
     def renew_lease(self, run_id: str, epoch: int, ttl: float) -> None:
@@ -366,7 +391,9 @@ class Journal:
             self._event(c, run_id, epoch, "lease_released", {})
 
     # ------------------------------------------------------------------ steps
-    def plan_step(self, run_id: str, epoch: int, step_index: int, step: dict[str, Any], source: str) -> dict[str, Any]:
+    def plan_step(
+        self, run_id: str, epoch: int, step_index: int, step: dict[str, Any], source: str
+    ) -> dict[str, Any]:
         """Record the decision of what step N is. First writer wins, so a resume reuses it."""
         with self.tx() as c:
             self._check_fence(c, run_id, epoch)
@@ -379,7 +406,9 @@ class Journal:
                 "INSERT INTO step_plans(run_id, step_index, step_json, source) VALUES (?,?,?,?)",
                 (run_id, step_index, json.dumps(step, sort_keys=True), source),
             )
-            self._event(c, run_id, epoch, "step_planned", {"step_index": step_index, "source": source, "step": step})
+            self._event(
+                c, run_id, epoch, "step_planned", {"step_index": step_index, "source": source, "step": step}
+            )
             return step
 
     def planned_step(self, run_id: str, step_index: int) -> dict[str, Any] | None:
@@ -416,7 +445,8 @@ class Journal:
             ).fetchall()
         else:
             rows = self._conn.execute(
-                "SELECT * FROM attempts WHERE run_id=? AND step_index=? ORDER BY attempt", (run_id, step_index)
+                "SELECT * FROM attempts WHERE run_id=? AND step_index=? ORDER BY attempt",
+                (run_id, step_index),
             ).fetchall()
         out = []
         for r in rows:
@@ -441,12 +471,30 @@ class Journal:
             c.execute(
                 "UPDATE attempts SET status=?, tree=?, commit_sha=?, verdict=?, ended_at=?"
                 " WHERE run_id=? AND step_index=? AND attempt=?",
-                (status, tree, commit_sha, json.dumps(verdict, sort_keys=True), _now(), run_id, step_index, attempt),
+                (
+                    status,
+                    tree,
+                    commit_sha,
+                    json.dumps(verdict, sort_keys=True),
+                    _now(),
+                    run_id,
+                    step_index,
+                    attempt,
+                ),
             )
             self._event(
-                c, run_id, epoch, "verdict",
-                {"step_index": step_index, "attempt": attempt, "status": status, "tree": tree, "commit": commit_sha,
-                 "summary": verdict.get("summary")},
+                c,
+                run_id,
+                epoch,
+                "verdict",
+                {
+                    "step_index": step_index,
+                    "attempt": attempt,
+                    "status": status,
+                    "tree": tree,
+                    "commit": commit_sha,
+                    "summary": verdict.get("summary"),
+                },
             )
 
     def complete_step(self, run_id: str, epoch: int, step_index: int, commit_sha: str) -> None:
@@ -465,7 +513,9 @@ class Journal:
     def set_verified_commit(self, run_id: str, epoch: int, commit_sha: str) -> None:
         with self.tx() as c:
             self._check_fence(c, run_id, epoch)
-            c.execute("UPDATE runs SET verified_commit=?, updated_at=? WHERE id=?", (commit_sha, _now(), run_id))
+            c.execute(
+                "UPDATE runs SET verified_commit=?, updated_at=? WHERE id=?", (commit_sha, _now(), run_id)
+            )
 
     # ------------------------------------------------------------------ budget
     def reserve(
@@ -478,10 +528,14 @@ class Journal:
         """Reserve ``amount`` against the run's one global budget and log the call as in flight."""
         with self.tx() as c:
             self._check_fence(c, run_id, epoch)
-            row = c.execute("SELECT budget_usd, spent_usd, reserved_usd FROM runs WHERE id=?", (run_id,)).fetchone()
+            row = c.execute(
+                "SELECT budget_usd, spent_usd, reserved_usd FROM runs WHERE id=?", (run_id,)
+            ).fetchone()
             if row["spent_usd"] + row["reserved_usd"] + amount > row["budget_usd"] + 1e-12:
                 c.execute("UPDATE runs SET denials=denials+1 WHERE id=?", (run_id,))
-                self._event(c, run_id, epoch, "budget_denied", {"amount": amount, **{k: row[k] for k in row.keys()}})
+                self._event(
+                    c, run_id, epoch, "budget_denied", {"amount": amount, **{k: row[k] for k in row.keys()}}
+                )
                 denied = (
                     f"run {run_id}: reserving ${amount:.4f} exceeds budget "
                     f"(spent ${row['spent_usd']:.4f} + reserved ${row['reserved_usd']:.4f} of ${row['budget_usd']:.4f})"
@@ -501,18 +555,40 @@ class Journal:
         c.execute(
             "INSERT INTO model_calls(id, run_id, step_index, attempt, call_index, role, provider, model, status,"
             " reserved_usd, request_blob, ts) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
-            (call_id, run_id, call["step_index"], call["attempt"], call["call_index"], call["role"],
-             call["provider"], call["model"], "reserved", amount, call.get("request_blob"), _now()),
+            (
+                call_id,
+                run_id,
+                call["step_index"],
+                call["attempt"],
+                call["call_index"],
+                call["role"],
+                call["provider"],
+                call["model"],
+                "reserved",
+                amount,
+                call.get("request_blob"),
+                _now(),
+            ),
         )
         return call_id
 
     def settle(self, call_id: str, cost_usd: float, fields: dict[str, Any], status: str = "ok") -> None:
         """Replace a reservation with the actual cost. Not fenced: money spent is spent."""
-        allowed = {"input_tokens", "output_tokens", "cache_read", "cache_write", "latency_ms", "stop_reason",
-                   "response_blob", "error"}
+        allowed = {
+            "input_tokens",
+            "output_tokens",
+            "cache_read",
+            "cache_write",
+            "latency_ms",
+            "stop_reason",
+            "response_blob",
+            "error",
+        }
         cols = {k: v for k, v in fields.items() if k in allowed}
         with self.tx() as c:
-            row = c.execute("SELECT run_id, reserved_usd, status FROM model_calls WHERE id=?", (call_id,)).fetchone()
+            row = c.execute(
+                "SELECT run_id, reserved_usd, status FROM model_calls WHERE id=?", (call_id,)
+            ).fetchone()
             if row is None or row["status"] != "reserved":
                 return
             c.execute(
@@ -563,7 +639,14 @@ class Journal:
 
     # ------------------------------------------------------------------ effects
     def propose_effect(
-        self, run_id: str, epoch: int, key: str, step_index: int, effect_index: int, kind: str, payload: dict[str, Any]
+        self,
+        run_id: str,
+        epoch: int,
+        key: str,
+        step_index: int,
+        effect_index: int,
+        kind: str,
+        payload: dict[str, Any],
     ) -> dict[str, Any]:
         """Record an effect's intent. Same key twice returns the first record unchanged."""
         with self.tx() as c:
@@ -575,10 +658,22 @@ class Journal:
             c.execute(
                 "INSERT INTO effects(key, run_id, step_index, effect_index, kind, payload, status, epoch, created_at,"
                 " updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)",
-                (key, run_id, step_index, effect_index, kind, json.dumps(payload, sort_keys=True), "proposed", epoch,
-                 ts, ts),
+                (
+                    key,
+                    run_id,
+                    step_index,
+                    effect_index,
+                    kind,
+                    json.dumps(payload, sort_keys=True),
+                    "proposed",
+                    epoch,
+                    ts,
+                    ts,
+                ),
             )
-            self._event(c, run_id, epoch, "effect_proposed", {"key": key, "kind": kind, "step_index": step_index})
+            self._event(
+                c, run_id, epoch, "effect_proposed", {"key": key, "kind": kind, "step_index": step_index}
+            )
             return dict(c.execute("SELECT * FROM effects WHERE key=?", (key,)).fetchone())
 
     def mark_effect(self, run_id: str, epoch: int, key: str, status: str, result: Any = None) -> None:
@@ -595,10 +690,13 @@ class Journal:
         with self.tx() as c:
             self._check_fence(c, run_id, epoch)
             cur = c.execute(
-                "DELETE FROM effects WHERE run_id=? AND step_index=? AND status='proposed'", (run_id, step_index)
+                "DELETE FROM effects WHERE run_id=? AND step_index=? AND status='proposed'",
+                (run_id, step_index),
             )
             if cur.rowcount:
-                self._event(c, run_id, epoch, "effects_discarded", {"step_index": step_index, "count": cur.rowcount})
+                self._event(
+                    c, run_id, epoch, "effects_discarded", {"step_index": step_index, "count": cur.rowcount}
+                )
             return cur.rowcount
 
     def effects(self, run_id: str, step_index: int | None = None) -> list[dict[str, Any]]:
@@ -608,7 +706,8 @@ class Journal:
             ).fetchall()
         else:
             rows = self._conn.execute(
-                "SELECT * FROM effects WHERE run_id=? AND step_index=? ORDER BY effect_index", (run_id, step_index)
+                "SELECT * FROM effects WHERE run_id=? AND step_index=? ORDER BY effect_index",
+                (run_id, step_index),
             ).fetchall()
         out = []
         for r in rows:
@@ -635,15 +734,26 @@ class Journal:
             c.execute(
                 "INSERT INTO parks(id, run_id, step_index, reason, question, preconditions, status, created_at,"
                 " updated_at) VALUES (?,?,?,?,?,?,?,?,?)",
-                (park_id, run_id, step_index, reason, question, json.dumps(preconditions or {}, sort_keys=True),
-                 "open", ts, ts),
+                (
+                    park_id,
+                    run_id,
+                    step_index,
+                    reason,
+                    question,
+                    json.dumps(preconditions or {}, sort_keys=True),
+                    "open",
+                    ts,
+                    ts,
+                ),
             )
             c.execute(
                 "UPDATE runs SET status='parked', status_reason=?, lease_owner=NULL, lease_expires=0, updated_at=?"
                 " WHERE id=?",
                 (reason, ts, run_id),
             )
-            self._event(c, run_id, epoch, "parked", {"park_id": park_id, "reason": reason, "question": question})
+            self._event(
+                c, run_id, epoch, "parked", {"park_id": park_id, "reason": reason, "question": question}
+            )
             return park_id
 
     def answer_park(self, park_id: str, answer: str) -> str:
@@ -655,7 +765,8 @@ class Journal:
             if row["status"] != "open":
                 raise ValueError(f"park {park_id} is {row['status']}, not open")
             c.execute(
-                "UPDATE parks SET status='answered', answer=?, updated_at=? WHERE id=?", (answer, _now(), park_id)
+                "UPDATE parks SET status='answered', answer=?, updated_at=? WHERE id=?",
+                (answer, _now(), park_id),
             )
             c.execute(
                 "UPDATE runs SET status='queued', status_reason=NULL, updated_at=? WHERE id=? AND status='parked'",

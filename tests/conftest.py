@@ -30,14 +30,30 @@ def make_spec(hidden: str, **over) -> TaskSpec:
         "gate": {
             "hidden_dir": hidden,
             "checks": [
-                {"name": "add", "cmd": [PY, "-m", "pytest", "-q", "-p", "no:cacheprovider", "_hidden/test_add.py"]},
-                {"name": "mul", "cmd": [PY, "-m", "pytest", "-q", "-p", "no:cacheprovider", "_hidden/test_mul.py"]},
+                {
+                    "name": "add",
+                    "cmd": [PY, "-m", "pytest", "-q", "-p", "no:cacheprovider", "_hidden/test_add.py"],
+                },
+                {
+                    "name": "mul",
+                    "cmd": [PY, "-m", "pytest", "-q", "-p", "no:cacheprovider", "_hidden/test_mul.py"],
+                },
             ],
             "protected": ["_hidden/"],
         },
         "steps": [
-            {"title": "add", "instructions": "Write add.py with add(a, b).", "files": ["add.py"], "checks": ["add"]},
-            {"title": "mul", "instructions": "Write mul.py with mul(a, b).", "files": ["mul.py"], "checks": ["add", "mul"]},
+            {
+                "title": "add",
+                "instructions": "Write add.py with add(a, b).",
+                "files": ["add.py"],
+                "checks": ["add"],
+            },
+            {
+                "title": "mul",
+                "instructions": "Write mul.py with mul(a, b).",
+                "files": ["mul.py"],
+                "checks": ["add", "mul"],
+            },
         ],
         "budget_usd": 0.5,
     }
@@ -47,8 +63,13 @@ def make_spec(hidden: str, **over) -> TaskSpec:
 
 def good_script(**extra_steps):
     steps = {
-        "1": [[{"write": "add.py", "content": ADD_PY}, {"effect": "outbox_file", "payload": {"msg": "add ready"}}],
-              [{"finish": "add written"}]],
+        "1": [
+            [
+                {"write": "add.py", "content": ADD_PY},
+                {"effect": "outbox_file", "payload": {"msg": "add ready"}},
+            ],
+            [{"finish": "add written"}],
+        ],
         "2": [[{"write": "mul.py", "content": MUL_PY}], [{"finish": "mul written"}]],
     }
     steps.update(extra_steps)
@@ -66,6 +87,7 @@ def fast_config(**over) -> HarnessConfig:
 def harness_factory(tmp_path):
     def make(script, home=None, **cfg):
         return Harness(str(home or tmp_path / "home"), ScriptedProvider(script), config=fast_config(**cfg))
+
     return make
 
 

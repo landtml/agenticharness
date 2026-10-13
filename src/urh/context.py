@@ -38,8 +38,14 @@ def _untrusted(text: str, limit: int = 2000) -> str:
     return f"<untrusted>\n{text}\n</untrusted>"
 
 
-def step_message(step: StepSpec, step_index: int, total: int | None, done_titles: list[str],
-                 repair: dict | None = None, answers: list[str] | None = None) -> str:
+def step_message(
+    step: StepSpec,
+    step_index: int,
+    total: int | None,
+    done_titles: list[str],
+    repair: dict | None = None,
+    answers: list[str] | None = None,
+) -> str:
     parts = [f"STEP {step_index + 1}{f' of {total}' if total else ''}: {step.title}"]
     if done_titles:
         parts.append("Already verified: " + "; ".join(done_titles))
@@ -47,7 +53,9 @@ def step_message(step: StepSpec, step_index: int, total: int | None, done_titles
     if step.files:
         parts.append("Write these files: " + ", ".join(step.files))
     if answers:
-        parts.append("A person answered a question this run asked earlier:\n" + _untrusted("\n".join(answers)))
+        parts.append(
+            "A person answered a question this run asked earlier:\n" + _untrusted("\n".join(answers))
+        )
     if repair:
         parts.append(
             f"REPAIR (attempt {repair['attempt']}): the previous attempt failed the hidden checks. "

@@ -23,13 +23,15 @@ LEASE_TTL = 2.0
 
 def _env(script_path: str, home: str) -> dict[str, str]:
     env = dict(os.environ)
-    env.update({
-        "URH_PROVIDER": f"scripted:{script_path}",
-        "URH_HOME": home,
-        "URH_LEASE_TTL": str(LEASE_TTL),
-        "URH_HEARTBEAT": "0.5",
-        "URH_BACKOFF_S": "0",
-    })
+    env.update(
+        {
+            "URH_PROVIDER": f"scripted:{script_path}",
+            "URH_HOME": home,
+            "URH_LEASE_TTL": str(LEASE_TTL),
+            "URH_HEARTBEAT": "0.5",
+            "URH_BACKOFF_S": "0",
+        }
+    )
     return env
 
 
@@ -40,11 +42,21 @@ def _urh(env, *args, **kw):
 def test_sigkill_mid_step_resumes_without_redoing_verified_work(tmp_path, hidden):
     home = str(tmp_path / "home")
     marker = str(tmp_path / "hang.marker")
-    script = {"steps": {
-        "1": [[{"write": "add.py", "content": ADD_PY}, {"effect": "outbox_file", "payload": {"msg": "add ready"}}],
-              [{"finish": "add written"}]],
-        "2": [[{"hang_once": marker}, {"write": "mul.py", "content": MUL_PY}], [{"finish": "mul written"}]],
-    }}
+    script = {
+        "steps": {
+            "1": [
+                [
+                    {"write": "add.py", "content": ADD_PY},
+                    {"effect": "outbox_file", "payload": {"msg": "add ready"}},
+                ],
+                [{"finish": "add written"}],
+            ],
+            "2": [
+                [{"hang_once": marker}, {"write": "mul.py", "content": MUL_PY}],
+                [{"finish": "mul written"}],
+            ],
+        }
+    }
     script_path = str(tmp_path / "script.json")
     with open(script_path, "w") as f:
         json.dump(script, f)
@@ -58,8 +70,9 @@ def test_sigkill_mid_step_resumes_without_redoing_verified_work(tmp_path, hidden
     run_id = sub.stdout.strip()
 
     # First process: runs step 1 to a verified commit, then hangs inside step 2's first model call.
-    proc = subprocess.Popen([sys.executable, "-m", "urh", "run", run_id], env=env,
-                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    proc = subprocess.Popen(
+        [sys.executable, "-m", "urh", "run", run_id], env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
     deadline = time.time() + 60
     while not os.path.exists(marker):
         assert proc.poll() is None, proc.stderr.read().decode()

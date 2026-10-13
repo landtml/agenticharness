@@ -37,10 +37,15 @@ def test_worker_never_sees_hidden_tests_or_real_paths(harness_factory, hidden, t
 
 
 def test_failed_check_triggers_repair_that_must_differ(harness_factory, hidden):
-    script = good_script(**{
-        "1": [[{"write": "add.py", "content": "def add(a, b):\n    return a - b\n"}], [{"finish": "oops"}]],
-        "1@2": [[{"write": "add.py", "content": ADD_PY}], [{"finish": "fixed"}]],
-    })
+    script = good_script(
+        **{
+            "1": [
+                [{"write": "add.py", "content": "def add(a, b):\n    return a - b\n"}],
+                [{"finish": "oops"}],
+            ],
+            "1@2": [[{"write": "add.py", "content": ADD_PY}], [{"finish": "fixed"}]],
+        }
+    )
     h = harness_factory(script)
     rid = h.submit(make_spec(hidden))
     assert h.run(rid) == "done"
@@ -50,11 +55,18 @@ def test_failed_check_triggers_repair_that_must_differ(harness_factory, hidden):
 
 
 def test_failed_attempt_effects_are_discarded_not_fired(harness_factory, hidden, tmp_path):
-    script = good_script(**{
-        "1": [[{"write": "add.py", "content": "def add(a, b):\n    return 0\n"},
-               {"effect": "outbox_file", "payload": {"msg": "premature"}}], [{"finish": "x"}]],
-        "1@2": [[{"write": "add.py", "content": ADD_PY}], [{"finish": "fixed"}]],
-    })
+    script = good_script(
+        **{
+            "1": [
+                [
+                    {"write": "add.py", "content": "def add(a, b):\n    return 0\n"},
+                    {"effect": "outbox_file", "payload": {"msg": "premature"}},
+                ],
+                [{"finish": "x"}],
+            ],
+            "1@2": [[{"write": "add.py", "content": ADD_PY}], [{"finish": "fixed"}]],
+        }
+    )
     h = harness_factory(script)
     rid = h.submit(make_spec(hidden))
     assert h.run(rid) == "done"
@@ -70,10 +82,12 @@ def test_identical_repair_parks_for_no_progress(harness_factory, hidden):
 
 
 def test_repairs_exhausted_parks_then_answer_resumes(harness_factory, hidden):
-    script = good_script(**{
-        "1": [[{"write": "add.py", "content": "def add(a, b):\n    return 0\n"}], [{"finish": "x"}]],
-        "1@2": [[{"write": "add.py", "content": "def add(a, b):\n    return 1\n"}], [{"finish": "x"}]],
-    })
+    script = good_script(
+        **{
+            "1": [[{"write": "add.py", "content": "def add(a, b):\n    return 0\n"}], [{"finish": "x"}]],
+            "1@2": [[{"write": "add.py", "content": "def add(a, b):\n    return 1\n"}], [{"finish": "x"}]],
+        }
+    )
     h = harness_factory(script)
     rid = h.submit(make_spec(hidden, max_repairs=1))
     assert h.run(rid) == "parked"
@@ -121,7 +135,7 @@ def test_irreversible_effect_waits_for_approval(harness_factory, hidden, tmp_pat
     assert h.run(rid) == "parked"
     park = h.journal.parks(rid, status="open")[0]
     assert park["reason"] == "effect"
-    assert len(deliveries(tmp_path / "home")) == 1      # only step 1's reversible effect
+    assert len(deliveries(tmp_path / "home")) == 1  # only step 1's reversible effect
     h.journal.answer_park(park["id"], "approve")
     assert h.run(rid) == "done"
     assert len(deliveries(tmp_path / "home")) == 2
@@ -153,7 +167,7 @@ def test_stale_lease_holder_cannot_advance_run(harness_factory, hidden):
     rid = h.submit(make_spec(hidden))
     stale = h.journal.acquire_lease(rid, "old-process", ttl=0.0)
     assert stale is not None
-    assert h.run(rid) == "done"   # takes over the expired lease with a new epoch
+    assert h.run(rid) == "done"  # takes over the expired lease with a new epoch
     with pytest.raises(LeaseLost):
         h.journal.complete_step(rid, stale, 2, "f" * 40)
 

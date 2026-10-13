@@ -72,8 +72,13 @@ def run(
         argv = ["unshare", "--net", "--map-root-user", *argv]
     try:
         proc = subprocess.Popen(
-            argv, cwd=cwd, env=env or scrubbed_env(cwd), stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            stdin=subprocess.DEVNULL, start_new_session=True,
+            argv,
+            cwd=cwd,
+            env=env or scrubbed_env(cwd),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            stdin=subprocess.DEVNULL,
+            start_new_session=True,
         )
     except OSError as e:
         return CommandResult(127, "", f"cannot run command: {e.strerror}", False)

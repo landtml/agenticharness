@@ -32,7 +32,7 @@ _REPAIR = re.compile(r"REPAIR \(attempt (\d+)\)")
 
 
 class ScriptedProvider:
-    name = "anthropic"   # stands in for the pinned provider so runs can move between real and scripted
+    name = "anthropic"  # stands in for the pinned provider so runs can move between real and scripted
 
     def __init__(self, script: dict[str, Any]):
         self.script = script
@@ -49,8 +49,12 @@ class ScriptedProvider:
         if self.fail_calls > 0:
             self.fail_calls -= 1
             raise ProviderUnavailable("scripted outage")
-        usage = {"input_tokens": len(json.dumps(request.get("messages"), default=str)) // 4,
-                 "output_tokens": 40, "cache_read_input_tokens": 0, "cache_creation_input_tokens": 0}
+        usage = {
+            "input_tokens": len(json.dumps(request.get("messages"), default=str)) // 4,
+            "output_tokens": 40,
+            "cache_read_input_tokens": 0,
+            "cache_creation_input_tokens": 0,
+        }
         if "format" in request.get("output_config", {}):
             return self._plan(request, usage)
         messages = request["messages"]
@@ -61,8 +65,9 @@ class ScriptedProvider:
         turns = self.script["steps"].get(key) or self.script["steps"].get(step_no) or []
         turn = sum(1 for m in messages if m["role"] == "assistant")
         if turn >= len(turns):
-            return ProviderResponse([{"type": "text", "text": "Nothing more to do."}], "end_turn", usage,
-                                    request["model"])
+            return ProviderResponse(
+                [{"type": "text", "text": "Nothing more to do."}], "end_turn", usage, request["model"]
+            )
         content: list[dict[str, Any]] = []
         for n, action in enumerate(turns[turn]):
             tid = f"toolu_{self.calls}_{n}"
@@ -71,20 +76,39 @@ class ScriptedProvider:
                 if not os.path.exists(marker):
                     with open(marker, "w") as f:
                         f.write(str(os.getpid()))
-                    while True:          # wait here to be killed
+                    while True:  # wait here to be killed
                         time.sleep(1)
             elif "sleep" in action:
                 time.sleep(float(action["sleep"]))
             elif "write" in action:
-                content.append({"type": "tool_use", "id": tid, "name": "write_file",
-                                "input": {"path": action["write"], "content": action["content"]}})
+                content.append(
+                    {
+                        "type": "tool_use",
+                        "id": tid,
+                        "name": "write_file",
+                        "input": {"path": action["write"], "content": action["content"]},
+                    }
+                )
             elif "bash" in action:
-                content.append({"type": "tool_use", "id": tid, "name": "bash", "input": {"command": action["bash"]}})
+                content.append(
+                    {"type": "tool_use", "id": tid, "name": "bash", "input": {"command": action["bash"]}}
+                )
             elif "effect" in action:
-                content.append({"type": "tool_use", "id": tid, "name": "propose_effect",
-                                "input": {"kind": action["effect"], "payload_json": json.dumps(action.get("payload", {}))}})
+                content.append(
+                    {
+                        "type": "tool_use",
+                        "id": tid,
+                        "name": "propose_effect",
+                        "input": {
+                            "kind": action["effect"],
+                            "payload_json": json.dumps(action.get("payload", {})),
+                        },
+                    }
+                )
             elif "finish" in action:
-                content.append({"type": "tool_use", "id": tid, "name": "finish", "input": {"summary": action["finish"]}})
+                content.append(
+                    {"type": "tool_use", "id": tid, "name": "finish", "input": {"summary": action["finish"]}}
+                )
             elif "text" in action:
                 content.append({"type": "text", "text": action["text"]})
         stop = "tool_use" if any(b["type"] == "tool_use" for b in content) else "end_turn"
@@ -97,4 +121,6 @@ class ScriptedProvider:
         plan = self.script.get("plan", [])
         item = plan[idx] if idx < len(plan) else {"done": True}
         full = {"done": False, "title": "", "instructions": "", "files": [], "checks": [], **item}
-        return ProviderResponse([{"type": "text", "text": json.dumps(full)}], "end_turn", usage, request["model"])
+        return ProviderResponse(
+            [{"type": "text", "text": json.dumps(full)}], "end_turn", usage, request["model"]
+        )
