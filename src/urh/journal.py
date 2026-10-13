@@ -482,19 +482,29 @@ class Journal:
             if row["spent_usd"] + row["reserved_usd"] + amount > row["budget_usd"] + 1e-12:
                 c.execute("UPDATE runs SET denials=denials+1 WHERE id=?", (run_id,))
                 self._event(c, run_id, epoch, "budget_denied", {"amount": amount, **{k: row[k] for k in row.keys()}})
-                raise BudgetExceeded(
+                denied = (
                     f"run {run_id}: reserving ${amount:.4f} exceeds budget "
                     f"(spent ${row['spent_usd']:.4f} + reserved ${row['reserved_usd']:.4f} of ${row['budget_usd']:.4f})"
                 )
-            call_id = new_id("call")
-            c.execute("UPDATE runs SET reserved_usd=reserved_usd+? WHERE id=?", (amount, run_id))
-            c.execute(
-                "INSERT INTO model_calls(id, run_id, step_index, attempt, call_index, role, provider, model, status,"
-                " reserved_usd, request_blob, ts) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
-                (call_id, run_id, call["step_index"], call["attempt"], call["call_index"], call["role"],
-                 call["provider"], call["model"], "reserved", amount, call.get("request_blob"), _now()),
-            )
-            return call_id
+                call_id = ""
+            else:
+                denied = None
+                call_id = self._reserve_row(c, run_id, call, amount)
+        if denied is not None:
+            # Raised after the commit so the denial itself stays on the record.
+            raise BudgetExceeded(denied)
+        return call_id
+
+    def _reserve_row(self, c: sqlite3.Connection, run_id: str, call: dict[str, Any], amount: float) -> str:
+        call_id = new_id("call")
+        c.execute("UPDATE runs SET reserved_usd=reserved_usd+? WHERE id=?", (amount, run_id))
+        c.execute(
+            "INSERT INTO model_calls(id, run_id, step_index, attempt, call_index, role, provider, model, status,"
+            " reserved_usd, request_blob, ts) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+            (call_id, run_id, call["step_index"], call["attempt"], call["call_index"], call["role"],
+             call["provider"], call["model"], "reserved", amount, call.get("request_blob"), _now()),
+        )
+        return call_id
 
     def settle(self, call_id: str, cost_usd: float, fields: dict[str, Any], status: str = "ok") -> None:
         """Replace a reservation with the actual cost. Not fenced: money spent is spent."""
