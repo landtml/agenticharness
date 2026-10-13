@@ -20,6 +20,11 @@ def _provider(name: str) -> Provider:
         return ScriptedProvider.from_file(name.split(":", 1)[1])
     if name == "anthropic":
         return AnthropicProvider()
+    if name == "claude-cli":
+        # A signed-in Claude Code CLI as transport; no API key needed.
+        from .providers.claude_cli import ClaudeCliProvider
+
+        return ClaudeCliProvider()
     if name.startswith("openai-compatible:"):
         # e.g. openai-compatible:https://openrouter.ai/api/v1 with OPENAI_API_KEY set
         from .providers.openai_compat import OpenAICompatibleProvider
@@ -28,7 +33,7 @@ def _provider(name: str) -> Provider:
             name.split(":", 1)[1], api_key_env=os.environ.get("URH_API_KEY_ENV", "OPENAI_API_KEY")
         )
     raise SystemExit(
-        f"unknown provider {name!r} (use 'anthropic', 'openai-compatible:URL' or 'scripted:PATH')"
+        f"unknown provider {name!r} (use 'anthropic', 'claude-cli', 'openai-compatible:URL' or 'scripted:PATH')"
     )
 
 
