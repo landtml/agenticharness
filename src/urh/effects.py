@@ -175,7 +175,7 @@ class EffectGuard:
         fence = Fence(run_id, epoch)
         for eff in self.journal.effects(run_id, step_index):
             key, status = eff["key"], eff["status"]
-            if status == "done":
+            if status in ("done", "failed"):
                 result.done.append(key)
                 continue
             if status == "parked" and key not in approved:

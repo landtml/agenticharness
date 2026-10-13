@@ -580,6 +580,17 @@ class Journal:
             )
             self._event(c, run_id, epoch, f"effect_{status}", {"key": key})
 
+    def discard_proposed_effects(self, run_id: str, epoch: int, step_index: int) -> int:
+        """Drop effects a failed attempt proposed. They were never dispatched, so this is safe."""
+        with self.tx() as c:
+            self._check_fence(c, run_id, epoch)
+            cur = c.execute(
+                "DELETE FROM effects WHERE run_id=? AND step_index=? AND status='proposed'", (run_id, step_index)
+            )
+            if cur.rowcount:
+                self._event(c, run_id, epoch, "effects_discarded", {"step_index": step_index, "count": cur.rowcount})
+            return cur.rowcount
+
     def effects(self, run_id: str, step_index: int | None = None) -> list[dict[str, Any]]:
         if step_index is None:
             rows = self._conn.execute(
