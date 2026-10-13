@@ -20,7 +20,16 @@ def _provider(name: str) -> Provider:
         return ScriptedProvider.from_file(name.split(":", 1)[1])
     if name == "anthropic":
         return AnthropicProvider()
-    raise SystemExit(f"unknown provider {name!r} (use 'anthropic' or 'scripted:PATH')")
+    if name.startswith("openai-compatible:"):
+        # e.g. openai-compatible:https://openrouter.ai/api/v1 with OPENAI_API_KEY set
+        from .providers.openai_compat import OpenAICompatibleProvider
+
+        return OpenAICompatibleProvider(
+            name.split(":", 1)[1], api_key_env=os.environ.get("URH_API_KEY_ENV", "OPENAI_API_KEY")
+        )
+    raise SystemExit(
+        f"unknown provider {name!r} (use 'anthropic', 'openai-compatible:URL' or 'scripted:PATH')"
+    )
 
 
 def _harness(args: argparse.Namespace) -> Harness:
@@ -38,6 +47,16 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--provider", default=os.environ.get("URH_PROVIDER", "anthropic"))
     p.add_argument("--lease-ttl", type=float, default=float(os.environ.get("URH_LEASE_TTL", "30")))
     p.add_argument("--heartbeat", type=float, default=float(os.environ.get("URH_HEARTBEAT", "10")))
+    p.add_argument(
+        "--models",
+        default=os.environ.get("URH_MODELS"),
+        help='role-to-model JSON, e.g. \'{"manager": "...", "worker": "..."}\'',
+    )
+    p.add_argument(
+        "--prices",
+        default=os.environ.get("URH_PRICES"),
+        help="JSON file of per-model prices (USD per MTok) for models the built-in book lacks",
+    )
     sub = p.add_subparsers(dest="cmd", required=True)
 
     s = sub.add_parser("submit", help="create a run from a spec file")

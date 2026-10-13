@@ -13,7 +13,7 @@ import os
 import socket
 import threading
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from . import HARNESS_VERSION
@@ -22,9 +22,10 @@ from .checkpoint import GitCheckpoint
 from .context import step_message, system_blocks
 from .effects import EffectAdapter, EffectGuard, OutboxFileAdapter
 from .gate import ScriptGate, Verdict
-from .gateway import ModelGateway, Provider, ProviderDown
+from .gateway import DEFAULT_MODELS, ModelGateway, Provider, ProviderDown
 from .journal import SCHEMA_VERSION, BudgetExceeded, Journal, LeaseLost
 from .manager import CodeManager, LLMManager, Manager
+from .pricing import PriceBook
 from .spec import StepSpec, TaskSpec
 from .worker import Worker, Workspace
 
@@ -46,6 +47,8 @@ class HarnessConfig:
     provider_retries: int = 3
     provider_backoff_s: float = 2.0
     command_timeout: float = 60.0
+    # Which model plays which role. Any provider's model ids work; these are only the defaults.
+    models: dict[str, str] = field(default_factory=lambda: dict(DEFAULT_MODELS))
 
 
 class _Heartbeat(threading.Thread):
@@ -74,6 +77,7 @@ class Harness:
         adapters: list[EffectAdapter] | None = None,
         config: HarnessConfig | None = None,
         owner: str | None = None,
+        prices: PriceBook | None = None,
     ):
         self.home = os.path.abspath(home)
         os.makedirs(self.home, exist_ok=True)
@@ -87,6 +91,7 @@ class Harness:
             provider,
             retries=self.config.provider_retries,
             backoff_s=self.config.provider_backoff_s,
+            prices=prices,
         )
         if adapters is None:
             adapters = [OutboxFileAdapter(os.path.join(self.home, "outbox"))]
@@ -104,9 +109,8 @@ class Harness:
         pins = {
             "harness_version": HARNESS_VERSION,
             "schema_version": SCHEMA_VERSION,
-            **ModelGateway.default_pins(),
+            **self.gateway.pins_for(self.config.models),
         }
-        pins["provider"] = self.gateway.provider.name
         run_id, created = self.journal.create_run(spec.to_dict(), pins, budget, dedupe_key=dedupe_key)
         if created and cap is not None and self.journal.total_spent() > cap + budget:
             raise AdmissionDenied(f"global spend cap ${cap:.2f} exceeded")

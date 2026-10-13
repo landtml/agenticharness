@@ -1,128 +1,64 @@
 """Model gateway: the only door to model providers.
 
-It holds every run to its pinned provider and models, reserves each call's
-worst-case cost against the run's one global budget before the call, settles
-the actual cost after, logs every call (tokens, cache hits, cost, latency, the
-request and response by blob reference), and parks runs behind a circuit
-breaker when the provider is down.
+It holds every run to its pinned provider and role-to-model mapping, reserves
+each call's worst-case cost against the run's one global budget before the
+call, settles the actual cost after, logs every call (tokens, cache hits, cost,
+latency, the request and response by blob reference), and parks runs behind a
+circuit breaker when the provider is down.
 
-Only Anthropic is wired in. The coordinator/manager is Claude Opus 5.5 and the
-workers are Claude Haiku 5.5.
+Nothing here is specific to one vendor. Providers are adapters behind one
+interface (``urh.providers``); which model plays which role is configuration.
+This repository develops and tests with Claude Opus 5.5 as manager and Claude
+Haiku 5.5 as worker, which are only the defaults.
 """
 
 from __future__ import annotations
 
-import json
 import threading
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Protocol
+from typing import Any
 
 from .blobs import BlobStore
 from .journal import Journal
+from .pricing import DEFAULT_BOOK, DEFAULT_PRICES, Price, PriceBook
+from .providers.anthropic import AnthropicProvider
+from .providers.base import Provider, ProviderDown, ProviderResponse, ProviderUnavailable
 
-MANAGER_MODEL = "claude-opus-5-5"
-WORKER_MODEL = "claude-haiku-5-5"
-PROVIDER = "anthropic"
+__all__ = [
+    "AnthropicProvider",
+    "CallContext",
+    "CircuitBreaker",
+    "DEFAULT_MODELS",
+    "ModelGateway",
+    "PRICES",
+    "Price",
+    "Provider",
+    "ProviderDown",
+    "ProviderResponse",
+    "ProviderUnavailable",
+    "cost_usd",
+    "estimate_reservation",
+]
 
-
-@dataclass(frozen=True)
-class Price:
-    """USD per million tokens."""
-
-    input: float
-    output: float
-    cache_read: float
-    long_input: float | None = None  # price tier above ``long_threshold`` prompt tokens
-    long_output: float | None = None
-    long_threshold: int = 100_000
-
-    @property
-    def cache_write(self) -> float:  # 5-minute TTL write premium
-        return self.input * 1.25
-
-
-PRICES: dict[str, Price] = {
-    "claude-opus-5-5": Price(input=4.00, output=20.00, cache_read=0.20),
-    "claude-haiku-5-5": Price(input=0.10, output=0.50, cache_read=0.01, long_input=0.50, long_output=2.50),
-    "claude-sonnet-5-5": Price(input=2.00, output=10.00, cache_read=0.20),
+ROLES = ("manager", "worker", "judge")
+DEFAULT_MODELS: dict[str, str] = {
+    "manager": "claude-opus-5-5",
+    "worker": "claude-haiku-5-5",
+    "judge": "claude-haiku-5-5",
 }
+MANAGER_MODEL = DEFAULT_MODELS["manager"]
+WORKER_MODEL = DEFAULT_MODELS["worker"]
+PRICES = DEFAULT_PRICES
 
 
 def cost_usd(model: str, usage: dict[str, int]) -> float:
-    p = PRICES[model]
-    inp = int(usage.get("input_tokens", 0) or 0)
-    out = int(usage.get("output_tokens", 0) or 0)
-    cr = int(usage.get("cache_read_input_tokens", 0) or 0)
-    cw = int(usage.get("cache_creation_input_tokens", 0) or 0)
-    prompt = inp + cr + cw
-    in_price, out_price = p.input, p.output
-    if p.long_input is not None and prompt > p.long_threshold:
-        in_price, out_price = p.long_input, p.long_output or p.output
-    scale = in_price / p.input
-    return (inp * in_price + out * out_price + cr * p.cache_read * scale + cw * p.cache_write * scale) / 1e6
+    return DEFAULT_BOOK.cost(model, usage)
 
 
 def estimate_reservation(model: str, request: dict[str, Any]) -> float:
-    """Worst case: every prompt token uncached at the write premium, and the full max_tokens out."""
-    p = PRICES[model]
-    chars = len(json.dumps({k: request.get(k) for k in ("system", "messages", "tools")}, default=str))
-    prompt_tokens = chars // 3 + 64
-    in_price, out_price = p.input, p.output
-    if p.long_input is not None and prompt_tokens > p.long_threshold:
-        in_price, out_price = p.long_input, p.long_output or p.output
-    return (prompt_tokens * in_price * 1.25 + int(request.get("max_tokens", 4096)) * out_price) / 1e6
-
-
-@dataclass
-class ProviderResponse:
-    content: list[dict[str, Any]]
-    stop_reason: str | None
-    usage: dict[str, int]
-    model: str
-
-
-class Provider(Protocol):
-    name: str
-
-    def complete(self, request: dict[str, Any]) -> ProviderResponse: ...
-
-
-class ProviderUnavailable(Exception):
-    """Transient: connection error, 429, 5xx. Counts toward the circuit breaker."""
-
-
-class ProviderDown(Exception):
-    """Retries are spent or the breaker is open. The orchestrator parks the run."""
-
-
-class AnthropicProvider:
-    """Calls the Messages API through the official SDK."""
-
-    name = PROVIDER
-
-    def __init__(self, client: Any | None = None, timeout: float = 600.0):
-        if client is None:
-            import anthropic
-
-            client = anthropic.Anthropic(max_retries=0, timeout=timeout)
-        self.client = client
-
-    def complete(self, request: dict[str, Any]) -> ProviderResponse:
-        import anthropic
-
-        try:
-            resp = self.client.messages.create(**request)
-        except (anthropic.APIConnectionError, anthropic.RateLimitError, anthropic.InternalServerError) as e:
-            raise ProviderUnavailable(str(e)) from e
-        except anthropic.APIStatusError as e:
-            if e.status_code >= 500 or e.status_code in (408, 409, 529):
-                raise ProviderUnavailable(str(e)) from e
-            raise
-        content = [b.model_dump(exclude_none=True) for b in resp.content]
-        usage = resp.usage.model_dump(exclude_none=True) if resp.usage else {}
-        return ProviderResponse(content=content, stop_reason=resp.stop_reason, usage=usage, model=resp.model)
+    return DEFAULT_BOOK.reservation(model, request)
 
 
 @dataclass
@@ -174,6 +110,7 @@ class ModelGateway:
         backoff_s: float = 2.0,
         breaker: CircuitBreaker | None = None,
         sleep: Callable[[float], None] = time.sleep,
+        prices: PriceBook | None = None,
     ):
         self.journal = journal
         self.blobs = blobs
@@ -182,13 +119,19 @@ class ModelGateway:
         self.backoff_s = backoff_s
         self.breaker = breaker or CircuitBreaker()
         self.sleep = sleep
+        self.prices = prices or DEFAULT_BOOK
+
+    def pins_for(self, models: dict[str, str] | None = None) -> dict[str, Any]:
+        """Pins recorded on a new run: this gateway's provider and a model for every role."""
+        chosen = {**DEFAULT_MODELS, **(models or {})}
+        return {"provider": self.provider.name, "models": {r: chosen[r] for r in ROLES}}
 
     @staticmethod
     def default_pins() -> dict[str, Any]:
-        return {
-            "provider": PROVIDER,
-            "models": {"manager": MANAGER_MODEL, "worker": WORKER_MODEL, "judge": WORKER_MODEL},
-        }
+        return {"provider": "anthropic", "models": dict(DEFAULT_MODELS)}
+
+    def _cost(self, model: str, resp: ProviderResponse) -> float:
+        return resp.cost_usd if resp.cost_usd is not None else self.prices.cost(model, resp.usage)
 
     def call(self, ctx: CallContext, pins: dict[str, Any], request: dict[str, Any]) -> ProviderResponse:
         if pins.get("provider") != self.provider.name:
@@ -197,7 +140,7 @@ class ModelGateway:
             )
         model = pins["models"][ctx.role]
         request = {**request, "model": model}
-        reservation = estimate_reservation(model, request)
+        reservation = self.prices.reservation(model, request)
         request_blob = self.blobs.put_json(request)
         call_id = self.journal.reserve(
             ctx.run_id,
@@ -236,12 +179,12 @@ class ModelGateway:
                 # A silent substitution is a version change; do not accept it as the pinned model's work.
                 self.journal.settle(
                     call_id,
-                    cost_usd(model, resp.usage),
+                    self._cost(model, resp),
                     {"error": f"model drift: {resp.model}"},
                     status="error",
                 )
                 raise ProviderDown(f"provider served {resp.model} for pinned {model}")
-            cost = cost_usd(model, resp.usage)
+            cost = self._cost(model, resp)
             self.journal.settle(
                 call_id,
                 cost,

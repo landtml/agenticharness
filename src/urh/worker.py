@@ -185,7 +185,7 @@ class Worker:
                     "system": system,
                     "tools": TOOLS,
                     "messages": messages,
-                    "output_config": {"effort": self.effort},
+                    "effort": self.effort,
                 },
             )
             stop = resp.stop_reason

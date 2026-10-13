@@ -103,10 +103,8 @@ class LLMManager:
                 "max_tokens": 8000,
                 "system": [{"type": "text", "text": MANAGER_SYSTEM, "cache_control": {"type": "ephemeral"}}],
                 "messages": [{"role": "user", "content": "\n\n".join(lines)}],
-                "output_config": {
-                    "effort": self.effort,
-                    "format": {"type": "json_schema", "schema": _SCHEMA},
-                },
+                "effort": self.effort,
+                "response_schema": _SCHEMA,
             },
         )
         text = "".join(b.get("text", "") for b in resp.content if b.get("type") == "text")

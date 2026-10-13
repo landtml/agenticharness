@@ -55,7 +55,7 @@ class ScriptedProvider:
             "cache_read_input_tokens": 0,
             "cache_creation_input_tokens": 0,
         }
-        if "format" in request.get("output_config", {}):
+        if request.get("response_schema"):
             return self._plan(request, usage)
         messages = request["messages"]
         first = messages[0]["content"]

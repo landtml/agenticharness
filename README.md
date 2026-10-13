@@ -2,8 +2,12 @@
 
 The Upper-Right Harness (URH): a durable, headless agent orchestrator. A Claude Opus 5.5 manager plans work,
 Claude Haiku 5.5 workers do it (build, code, test, lint, scout, scaffold), script gates decide when work is
-done, and a journal lets any run survive `kill -9` without redoing verified steps. Models are reached only
-through the Anthropic API.
+done, and a journal lets any run survive `kill -9` without redoing verified steps.
+
+The harness is model-agnostic: providers are adapters behind one interface (`urh.providers`), and which
+model plays manager, worker or judge is configuration (`--models`, `--prices`). This repository develops
+and tests with Claude Opus 5.5 and Claude Haiku 5.5 through Anthropic; an OpenAI-compatible adapter
+(OpenAI, OpenRouter, local servers) ships too but is not exercised against real endpoints here.
 
 ## Layout
 
@@ -88,7 +92,9 @@ written off at its reservation, and step 2 re-runs once. Call-level replay (D2) 
 | --- | --- |
 | `journal.py` | SQLite (WAL) journal: runs, pins, leases, budget, attempts, verdicts, effects, parks, model calls |
 | `checkpoint.py` | Per-run bare git repo, per-epoch workspaces, commit on gate pass, CAS promotion |
-| `gateway.py` | Anthropic provider, pricing, reservation, call log, retries and circuit breaker |
+| `gateway.py` | Role-to-model pins, reservation, call log, retries and circuit breaker |
+| `providers/` | Canonical request format and adapters: Anthropic, OpenAI-compatible |
+| `pricing.py` | Per-model price book with overrides and a pessimistic fallback |
 | `effects.py` | Effect guard and adapters (outbox file, webhook, unkeyed) |
 | `gate.py` | Script gate and mutant-corpus audit |
 | `worker.py` | Haiku 5.5 tool loop and confined workspace tools |
