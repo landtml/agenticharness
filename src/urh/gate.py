@@ -17,7 +17,7 @@ from typing import Any
 
 from . import sandbox
 from .checkpoint import GitCheckpoint
-from .spec import GateSpec, StepSpec
+from .spec import Check, GateSpec, StepSpec
 
 MAX_FAILURES = 10
 MAX_FAILURE_LEN = 160
@@ -71,9 +71,17 @@ class ScriptGate:
 
     def _selected(self, step: StepSpec) -> list[Any]:
         if step.checks is None:
-            return list(self.spec.checks)
-        wanted = set(step.checks)
-        return [c for c in self.spec.checks if c.name in wanted]
+            chosen = list(self.spec.checks)
+        else:
+            wanted = set(step.checks)
+            chosen = [c for c in self.spec.checks if c.name in wanted]
+        # Planner-authored checks run alongside the spec's; the worker can never write either.
+        chosen += [
+            Check(f"plan{n + 1}", ["/bin/bash", "-c", cmd])
+            for n, cmd in enumerate(step.plan_checks)
+            if cmd.strip()
+        ]
+        return chosen
 
     def evaluate(self, ckpt: GitCheckpoint, parent: str, candidate: str, step: StepSpec) -> Verdict:
         changed = ckpt.changed_paths(parent, candidate)

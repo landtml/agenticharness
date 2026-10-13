@@ -411,6 +411,30 @@ class Journal:
             )
             return step
 
+    def replan_step(
+        self, run_id: str, epoch: int, step_index: int, step: dict[str, Any], source: str
+    ) -> dict[str, Any]:
+        """Replace the not-yet-verified step N after its repairs ran out. Its failed attempts stop counting
+        toward the new step's repair limit; they stay in the journal as ``superseded``."""
+        with self.tx() as c:
+            self._check_fence(c, run_id, epoch)
+            row = c.execute("SELECT step_index FROM runs WHERE id=?", (run_id,)).fetchone()
+            if row["step_index"] != step_index:
+                raise RuntimeError(f"run {run_id} is at step {row['step_index']}, cannot replan {step_index}")
+            c.execute(
+                "UPDATE step_plans SET step_json=?, source=? WHERE run_id=? AND step_index=?",
+                (json.dumps(step, sort_keys=True), source, run_id, step_index),
+            )
+            c.execute(
+                "UPDATE attempts SET status='superseded' WHERE run_id=? AND step_index=?"
+                " AND status IN ('fail', 'unsure', 'aborted')",
+                (run_id, step_index),
+            )
+            self._event(
+                c, run_id, epoch, "step_replanned", {"step_index": step_index, "source": source, "step": step}
+            )
+            return step
+
     def planned_step(self, run_id: str, step_index: int) -> dict[str, Any] | None:
         row = self._conn.execute(
             "SELECT step_json FROM step_plans WHERE run_id=? AND step_index=?", (run_id, step_index)

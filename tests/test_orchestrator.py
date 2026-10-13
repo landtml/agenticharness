@@ -155,7 +155,7 @@ def test_llm_manager_plans_novel_task_with_opus(harness_factory, hidden):
         {"title": "mul", "instructions": "Write mul.py", "files": ["mul.py"], "checks": []},
         {"done": True},
     ]
-    h = harness_factory(script)
+    h = harness_factory(script, manager="stepwise")
     rid = h.submit(make_spec(hidden, steps=None))
     assert h.run(rid) == "done"
     roles = {(c["role"], c["model"]) for c in h.journal.model_calls(rid)}
