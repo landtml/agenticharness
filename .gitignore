@@ -1,8 +1,20 @@
+# Python
 __pycache__/
 *.egg-info/
 .pytest_cache/
 .ruff_cache/
+.mypy_cache/
 .venv/
 build/
 dist/
+# Harness state (journal, blobs, run repos)
 .urh/
+# TypeScript
+node_modules/
+*.tsbuildinfo
+# Rust
+target/
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store

@@ -1,19 +1,37 @@
-# Upper-Right Harness (URH)
+# agenticharness
 
-A durable, headless agent orchestrator. Claude Opus 5.5 is the manager that plans steps for novel tasks;
-Claude Haiku 5.5 workers do each step in a fresh context; script gates the worker cannot touch decide when a
-step is done. Everything that must survive a `kill -9` lives in a SQLite journal and a per-run git repository.
-Models are reached only through the Anthropic API.
+The Upper-Right Harness (URH): a durable, headless agent orchestrator. A Claude Opus 5.5 manager plans work,
+Claude Haiku 5.5 workers do it (build, code, test, lint, scout, scaffold), script gates decide when work is
+done, and a journal lets any run survive `kill -9` without redoing verified steps. Models are reached only
+through the Anthropic API.
 
-The design follows the "Upper-Right Harness" recipe: journal first, then gates, idempotent effects and the
-park, then the gateway and budget, then context layout, then the manager.
+## Layout
 
-## Quick start
+| Path | Contents |
+| --- | --- |
+| `src/` | Python packages (the harness lives in `src/urh`) |
+| `tests/` | pytest suites; `tests/live` calls the real API and is opt-in |
+| `examples/` | Task specs with seed files and hidden gate tests |
+| `docs/` | Design notes |
+| `.github/workflows/` | CI: ruff and pytest on every push to `main` and every pull request |
+
+TypeScript or Rust components, if added, go in their own top-level folders with their own toolchain config.
+
+## Development
 
 ```bash
+python -m venv .venv && . .venv/bin/activate
 pip install -e '.[dev]'
-python -m pytest -q                    # 50 offline tests, including a real SIGKILL resume test
+ruff check .
+python -m pytest -q                 # offline tests
+python -m pytest -m live tests/live # needs ANTHROPIC_API_KEY
+```
 
+Python 3.11 or newer (CI uses 3.12). Lint settings are in `ruff.toml`; editor settings in `.editorconfig`.
+
+## Running the harness
+
+```bash
 export ANTHROPIC_API_KEY=...
 urh submit examples/slug/spec.json     # prints a run id
 urh run                                # drives every runnable run until done, failed or parked
@@ -62,7 +80,7 @@ A crash costs the step in flight. `tests/test_kill9.py` kills the harness with S
 call, then starts a new process: step 1's calls are not repeated, its effect fires once, the lost call is
 written off at its reservation, and step 2 re-runs once. Call-level replay (D2) is deliberately not built.
 
-## Layout
+## Modules
 
 | Module | Role |
 | --- | --- |
