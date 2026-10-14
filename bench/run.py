@@ -103,6 +103,7 @@ def summarize(rows: list[dict]) -> dict:
         "verified_rate": round(len(done) / n, 3) if n else 0.0,
         "park_rate": round(sum(1 for r in rows if r["parks"]) / n, 3) if n else 0.0,
         "false_done": sum(1 for r in rows if r["false_done"]),
+        "crashes": sum(1 for r in rows if r["status"] == "crash"),
         "replans": sum(r["replans"] for r in rows),
         "cost_usd": round(cost, 4),
         "cost_per_verified": round(cost / len(done), 4) if done else None,
@@ -127,7 +128,21 @@ def main() -> int:
     with tempfile.TemporaryDirectory(prefix="urh-bench-") as tmp:
         for k, name in enumerate(n for n in names for _ in range(args.repeat)):
             home = os.path.join(tmp, f"{name}-{k}")
-            row = run_task(name, args.provider, home, args.budget, args.planner_effort, args.mode)
+            try:
+                row = run_task(name, args.provider, home, args.budget, args.planner_effort, args.mode)
+            except Exception as e:  # a harness crash is a result, and the worst one
+                row = {
+                    "task": name,
+                    "mode": args.mode,
+                    "status": "crash",
+                    "error": repr(e)[:500],
+                    "hidden_pass": False,
+                    "false_done": False,
+                    "cost_usd": 0.0,
+                    "cost_by_role": {},
+                    "replans": 0,
+                    "parks": [],
+                }
             print(json.dumps(row), flush=True)
             rows.append(row)
     report = {"summary": summarize(rows), "runs": rows}
