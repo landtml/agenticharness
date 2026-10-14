@@ -38,6 +38,10 @@ def judge_audit(
     epoch = harness.journal.acquire_lease(run_id, "judge-audit", 3600)
     assert epoch is not None
     counter = {"n": 0}
+    assert spec.steps is not None
+    requirements = [f"Goal: {spec.goal}", *(f"Constraint: {c}" for c in spec.constraints)] + [
+        f"Step {k + 1} ({s.title}): {s.instructions}" for k, s in enumerate(spec.steps[: step_number - 1])
+    ]
 
     def evaluate(ckpt: GitCheckpoint, parent: str, candidate: str, step: StepSpec) -> str:
         counter["n"] += 1
@@ -51,6 +55,7 @@ def judge_audit(
             parent=parent,
             candidate=candidate,
             step=step,
+            requirements=requirements,
         )
         return v.status
 

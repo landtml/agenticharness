@@ -1,6 +1,3 @@
-# Mutant: apostrophe_removed
-# Apostrophes are deleted before separator collapsing, so contractions join into one word.
-# Deviation: slugify("don't") -> spec 'don-t', mutant 'dont'
 import re, unicodedata
 def slugify(text: str) -> str:
     text = text.replace("'", '')
