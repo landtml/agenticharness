@@ -18,6 +18,7 @@ provider or model.
 from __future__ import annotations
 
 import json
+import re
 from typing import Any
 
 from pydantic import BaseModel, Field, ValidationError
@@ -100,6 +101,10 @@ class PlanRejected(ValueError):
     pass
 
 
+# A test runner, or a test file run as a script: either way the worker wrote what decides the step.
+_RUNS_WORKER_TESTS = re.compile(r"\bpytest\b|\bunittest\b|\bpython3?\s+(\S*/)?test_\w*\.py|\w_test\.py\b")
+
+
 def plan_errors(plan: Plan, spec_check_names: list[str]) -> list[str]:
     errs: list[str] = []
     mids = [m.id for m in plan.milestones]
@@ -134,6 +139,13 @@ def plan_errors(plan: Plan, spec_check_names: list[str]) -> list[str]:
         unknown_retired = [c for c in s.retire_checks if c not in earlier]
         if unknown_retired:
             errs.append(f"step {s.id!r} retires checks no earlier step has: {unknown_retired}")
+        runs_tests = [c for c in s.plan_checks if _RUNS_WORKER_TESTS.search(c)]
+        if runs_tests:
+            errs.append(
+                f"step {s.id!r} has plan_checks that run tests the workers write {runs_tests[:2]}; a worker can "
+                'make its own tests pass, so check behaviour directly, e.g. python3 -c "from m import f; '
+                'assert f(2) == 4"'
+            )
         earlier.update(s.plan_checks)
         if s.effort not in EFFORTS:
             errs.append(f"step {s.id!r} has effort {s.effort!r}; use one of {list(EFFORTS)}")

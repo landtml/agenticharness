@@ -158,8 +158,12 @@ def scrubbed_env(home: str, extra: dict[str, str] | None = None) -> dict[str, st
         "PYTHONUNBUFFERED": "1",
         "TMPDIR": os.environ.get("TMPDIR", "/tmp"),
     }
-    # Keep the interpreter that runs the harness reachable as `python`.
-    py_dir = os.path.dirname(os.path.realpath(shutil.which("python3") or "/usr/bin/python3"))
+    # Keep the interpreter that runs the harness reachable as `python3`, with its packages: a virtualenv's
+    # bin directory, not the system interpreter its symlink resolves to, or `python3 -m pytest` finds no
+    # pytest and every planner check and worker test run that uses it fails for a reason no step can fix.
+    py_dir = os.path.dirname(os.path.abspath(sys.executable)) if sys.executable else ""
+    if not py_dir or not os.path.exists(os.path.join(py_dir, "python3")):
+        py_dir = os.path.dirname(os.path.realpath(shutil.which("python3") or "/usr/bin/python3"))
     if py_dir not in env["PATH"].split(":"):
         env["PATH"] = f"{py_dir}:{env['PATH']}"
     if extra:

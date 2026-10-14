@@ -329,3 +329,23 @@ def test_plan_shaped_failure_replans_before_escalating(make, hidden):
     assert h.run(rid) == "done"
     kinds = [e["kind"] for e in h.journal.events(rid)]
     assert "step_replanned" in kinds and "escalated" not in kinds
+
+
+@pytest.mark.parametrize(
+    "check,bad",
+    [
+        ("python3 -m pytest -q test_slug.py", True),
+        ("pytest", True),
+        ("python3 -m unittest discover", True),
+        ("python3 tests/test_slug.py", True),
+        ("python3 -c \"from slug import slugify; assert slugify('A b') == 'a-b'\"", False),
+        ("test -f test_slug.py", False),
+        ("python3 -m todo --file /tmp/x list", False),
+    ],
+)
+def test_plan_checks_may_not_run_tests_the_workers_write(check, bad):
+    """Cheap planners wrote pytest plan checks on the live bench; the validator now catches it for free."""
+    from urh.planner import plan_errors
+
+    plan = mplan([pstep("add", plan_checks=[check], spec_checks=["add"])])
+    assert any("run tests the workers write" in e for e in plan_errors(plan, ["add"])) is bad
