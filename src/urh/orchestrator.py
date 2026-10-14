@@ -17,7 +17,7 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Any
 
-from . import HARNESS_VERSION
+from . import HARNESS_VERSION, sandbox
 from .blobs import BlobStore
 from .checkpoint import GitCheckpoint
 from .context import step_message, system_blocks
@@ -92,6 +92,7 @@ class Harness:
     ):
         self.home = os.path.abspath(home)
         os.makedirs(self.home, exist_ok=True)
+        sandbox.hide(self.home)  # the journal, run repos and blobs are never visible to a command
         self.config = config or HarnessConfig()
         self.owner = owner or f"{socket.gethostname()}:{os.getpid()}:{uuid.uuid4().hex[:6]}"
         self.journal = Journal(os.path.join(self.home, "journal.sqlite"))
