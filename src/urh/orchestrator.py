@@ -49,7 +49,8 @@ class HarnessConfig:
     worker_effort: str = "medium"
     manager_effort: str = "medium"
     manager: str = "planner"  # planner: plan milestones, expand, replan | stepwise: one manager call per step
-    planner_effort: str = "high"
+    planner_effort: str = "medium"  # plan and expand; replans run at planner_replan_effort
+    planner_replan_effort: str = "high"
     provider_retries: int = 3
     provider_backoff_s: float = 2.0
     command_timeout: float = 60.0
@@ -115,7 +116,9 @@ class Harness:
         self.guard = EffectGuard(self.journal, adapters)
         self.worker = Worker(self.gateway, effort=self.config.worker_effort)
         self.llm_manager = LLMManager(self.gateway, effort=self.config.manager_effort)
-        self.planner = PlanningManager(self.gateway, effort=self.config.planner_effort)
+        self.planner = PlanningManager(
+            self.gateway, effort=self.config.planner_effort, replan_effort=self.config.planner_replan_effort
+        )
         self.judge = LLMJudge(self.gateway)
         self.vetter = default_vetter() if self.config.vet_plan_checks else None
 

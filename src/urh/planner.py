@@ -189,10 +189,18 @@ class PlanningManager:
     source = "planner"
 
     def __init__(
-        self, gateway: ModelGateway, effort: str = "high", max_replans: int = 3, max_plan_calls: int = 12
+        self,
+        gateway: ModelGateway,
+        effort: str = "medium",
+        replan_effort: str = "high",
+        max_replans: int = 3,
+        max_plan_calls: int = 12,
     ):
         self.gateway = gateway
+        # Planning a goal at medium effort verified as often as high on the bench at about a third of the
+        # planner cost; a replan follows evidence that the plan was wrong, so it thinks harder.
         self.effort = effort
+        self.replan_effort = replan_effort
         self.max_replans = max_replans
         self.max_plan_calls = max_plan_calls
 
@@ -323,7 +331,7 @@ class PlanningManager:
                         {"type": "text", "text": PLANNER_SYSTEM, "cache_control": {"type": "ephemeral"}}
                     ],
                     "messages": [{"role": "user", "content": text}],
-                    "effort": self.effort,
+                    "effort": self.replan_effort if why == "replan" else self.effort,
                     "response_schema": PLAN_SCHEMA,
                 },
             )

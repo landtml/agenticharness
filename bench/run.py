@@ -137,7 +137,7 @@ def main() -> int:
     ap.add_argument("tasks", nargs="*")
     ap.add_argument("--provider", default=os.environ.get("URH_PROVIDER", "claude-cli"))
     ap.add_argument("--budget", type=float, default=1.0)
-    ap.add_argument("--planner-effort", default="high")
+    ap.add_argument("--planner-effort", default="medium")
     ap.add_argument("--mode", choices=["harness", "plain"], default="harness")
     ap.add_argument("--repeat", type=int, default=1)
     ap.add_argument("--out")
