@@ -150,6 +150,7 @@ CREATE TABLE IF NOT EXISTS session_messages (
     session_id    TEXT NOT NULL,
     seq           INTEGER NOT NULL,
     text          TEXT NOT NULL,
+    checks_json   TEXT,                      -- gate checks this message adds (NULL: none named)
     run_id        TEXT,                      -- NULL until the previous message's run has finished
     created_at    REAL NOT NULL,
     PRIMARY KEY (session_id, seq)
@@ -213,6 +214,13 @@ class Run:
             lease_epoch=row["lease_epoch"],
             lease_expires=row["lease_expires"],
         )
+
+
+def _message(row: Any) -> dict[str, Any]:
+    m = dict(row)
+    raw = m.pop("checks_json", None)
+    m["checks"] = None if raw is None else json.loads(raw)
+    return m
 
 
 def _now() -> float:
@@ -279,6 +287,9 @@ class Journal:
             # executescript commits on its own; the DDL is idempotent, so run it bare.
             self._conn.executescript(_SCHEMA)
         with self.tx() as c:
+            cols = {r["name"] for r in c.execute("PRAGMA table_info(session_messages)")}
+            if "checks_json" not in cols:  # sessions predating per-message checks
+                c.execute("ALTER TABLE session_messages ADD COLUMN checks_json TEXT")
             row = c.execute("SELECT value FROM meta WHERE key='schema_version'").fetchone()
             if row is None:
                 c.execute("INSERT INTO meta(key, value) VALUES ('schema_version', ?)", (str(SCHEMA_VERSION),))
@@ -1031,7 +1042,7 @@ class Journal:
         )
         return [dict(r) for r in rows]
 
-    def add_session_message(self, session_id: str, text: str) -> int:
+    def add_session_message(self, session_id: str, text: str, checks: list[str] | None = None) -> int:
         with self.tx() as c:
             if c.execute("SELECT 1 FROM sessions WHERE id=?", (session_id,)).fetchone() is None:
                 raise KeyError(session_id)
@@ -1040,8 +1051,8 @@ class Journal:
                 (session_id,),
             ).fetchone()["n"]
             c.execute(
-                "INSERT INTO session_messages(session_id, seq, text, created_at) VALUES (?,?,?,?)",
-                (session_id, seq, text, _now()),
+                "INSERT INTO session_messages(session_id, seq, text, checks_json, created_at) VALUES (?,?,?,?,?)",
+                (session_id, seq, text, None if checks is None else json.dumps(checks), _now()),
             )
             return int(seq)
 
@@ -1049,7 +1060,7 @@ class Journal:
         rows = self._conn.execute(
             "SELECT * FROM session_messages WHERE session_id=? ORDER BY seq", (session_id,)
         ).fetchall()
-        return [dict(r) for r in rows]
+        return [_message(r) for r in rows]
 
     def pending_session_messages(self) -> list[dict[str, Any]]:
         """The oldest message without a run, per session (later ones wait behind it)."""
@@ -1058,7 +1069,7 @@ class Journal:
             " SELECT MIN(seq) FROM session_messages WHERE session_id=m.session_id AND run_id IS NULL)"
             " ORDER BY m.created_at"
         ).fetchall()
-        return [dict(r) for r in rows]
+        return [_message(r) for r in rows]
 
     def bind_session_message(self, session_id: str, seq: int, run_id: str) -> None:
         with self.tx() as c:

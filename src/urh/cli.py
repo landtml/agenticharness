@@ -88,6 +88,9 @@ def main(argv: list[str] | None = None) -> int:
     ss = ses.add_parser("send", help="add a message; it runs once the previous one has finished")
     ss.add_argument("session_id")
     ss.add_argument("text")
+    ss.add_argument(
+        "--check", action="append", dest="checks", help="gate check this message adds (repeatable)"
+    )
     ses.add_parser("show").add_argument("session_id")
     ses.add_parser("list")
 
@@ -159,7 +162,7 @@ def main(argv: list[str] | None = None) -> int:
             tpl = {k: v for k, v in template.to_dict().items() if k not in ("goal", "steps")}
             print(sessions.create(args.title, tpl, args.budget))
         elif sc == "send":
-            print(sessions.send(args.session_id, args.text))
+            print(sessions.send(args.session_id, args.text, args.checks))
         elif sc == "show":
             print(json.dumps(sessions.view(args.session_id), indent=2))
         else:

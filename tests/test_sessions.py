@@ -88,3 +88,25 @@ def test_template_cannot_fix_steps(sess, hidden):
     with pytest.raises(ValueError):
         s.create("x", {**template(hidden), "steps": [{"title": "a", "instructions": "b"}]})
     assert json.dumps(template(hidden))  # sanity: template is plain data
+
+
+def test_messages_add_checks_that_keep_applying(sess, hidden):
+    h, s = sess
+    tpl = template(hidden)
+    tpl["gate"]["checks"] = [
+        {"name": "add", "cmd": ["python", "-c", "import add"]},
+        {"name": "mul", "cmd": ["python", "-c", "import mul"]},
+    ]
+    sid = s.create("arith", tpl, budget_usd=1.0)
+    with pytest.raises(ValueError, match="no such gate checks: div"):
+        s.send(sid, "Write div.py", checks=["div"])
+    s.send(sid, "Write add.py with add(a, b)", checks=["add"])
+    s.send(sid, "Now add mul.py with mul(a, b)", checks=["mul"])
+    first, _ = (m["run_id"] for m in s.view(sid)["messages"])
+    # message 1 is gated by its own check only: the mul check belongs to a later message
+    assert [c["name"] for c in h.journal.get_run(first).spec["gate"]["checks"]] == ["add"]
+    assert h.run(first) == "done"
+    (second,) = s.advance()
+    assert [c["name"] for c in h.journal.get_run(second).spec["gate"]["checks"]] == ["add", "mul"]
+    assert h.run(second) == "done"
+    assert s.view(sid)["messages"][1]["checks"] == ["mul"]

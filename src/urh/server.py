@@ -13,7 +13,7 @@ a hook can only start the trigger's fixed template with its body attached as unt
     POST   /v1/triggers/<name>/enable    POST /v1/triggers/<name>/disable
     DELETE /v1/triggers/<name>
     GET    /v1/sessions                  POST /v1/sessions {title, template, budget_usd?}
-    GET    /v1/sessions/<id>             POST /v1/sessions/<id>/messages {text}
+    GET    /v1/sessions/<id>             POST /v1/sessions/<id>/messages {text, checks?}
     GET    /v1/sessions/<id>/files
     GET    /v1/stats
     POST   /hooks/<name>                 (X-URH-Signature: sha256=<hmac>, X-URH-Delivery: <id>)
@@ -182,7 +182,7 @@ class Api:
             sid, sub = m.group(1), m.group(2)
             try:
                 if sub == "/messages" and method == "POST":
-                    seq = self.rt.sessions.send(sid, str(data.get("text", "")))
+                    seq = self.rt.sessions.send(sid, str(data.get("text", "")), data.get("checks"))
                     return 201, {"seq": seq, **self.rt.sessions.view(sid)}
                 if sub == "/files" and method == "GET":
                     return 200, self.rt.sessions.files(sid)
