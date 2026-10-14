@@ -22,6 +22,7 @@ import hmac
 import json
 import logging
 import re
+import signal
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
@@ -215,6 +216,9 @@ def serve(runtime: Runtime, token: str, host: str, port: int, interval: float = 
     sched = threading.Thread(target=runtime.serve, args=(interval,), name="urh-scheduler", daemon=True)
     sched.start()
     log.info("urh serving on http://%s:%d", host, httpd.server_address[1])
+    if threading.current_thread() is threading.main_thread():
+        # service managers stop with SIGTERM: take the same clean path as Ctrl-C
+        signal.signal(signal.SIGTERM, lambda *_: (_ for _ in ()).throw(KeyboardInterrupt()))
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
