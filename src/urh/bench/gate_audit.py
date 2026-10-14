@@ -18,11 +18,12 @@ import os
 import shutil
 import sys
 import tempfile
+from collections.abc import Callable
 from typing import Any
 
 from ..checkpoint import GitCheckpoint
 from ..gate import ScriptGate
-from ..spec import TaskSpec
+from ..spec import StepSpec, TaskSpec
 
 
 def wilson(k: int, n: int, z: float = 1.96) -> tuple[float, float]:
@@ -47,12 +48,26 @@ def _candidate(ckpt: GitCheckpoint, epoch: int, root: str, overlay: str) -> str:
     return commit
 
 
+Evaluate = Callable[[GitCheckpoint, str, str, StepSpec], str]
+
+
 def audit(
-    spec: TaskSpec, step_number: int, mutants_dir: str, reference_dir: str | None = None
+    spec: TaskSpec,
+    step_number: int,
+    mutants_dir: str,
+    reference_dir: str | None = None,
+    evaluate: Evaluate | None = None,
 ) -> dict[str, Any]:
+    """``evaluate(ckpt, parent, candidate, step) -> status`` defaults to the spec's script gate."""
     assert spec.steps is not None
     step = spec.steps[step_number - 1]
-    gate = ScriptGate(spec.gate)
+    if evaluate is None:
+        gate = ScriptGate(spec.gate)
+
+        def evaluate(ckpt: GitCheckpoint, parent: str, candidate: str, step: StepSpec) -> str:
+            return gate.evaluate(ckpt, parent, candidate, step).status
+
+    verdicts: dict[str, str] = {}
     names = sorted(d for d in os.listdir(mutants_dir) if os.path.isdir(os.path.join(mutants_dir, d)))
     with tempfile.TemporaryDirectory(prefix="urh-audit-") as tmp:
         ckpt = GitCheckpoint(tmp)
@@ -60,14 +75,15 @@ def audit(
         epoch = 1
         reference_ok = None
         if reference_dir:
-            v = gate.evaluate(ckpt, root, _candidate(ckpt, epoch, root, reference_dir), step)
-            reference_ok = v.status == "pass"
+            verdicts["reference"] = evaluate(ckpt, root, _candidate(ckpt, epoch, root, reference_dir), step)
+            reference_ok = verdicts["reference"] == "pass"
             epoch += 1
         accepted = []
         for name in names:
             commit = _candidate(ckpt, epoch, root, os.path.join(mutants_dir, name))
             epoch += 1
-            if gate.evaluate(ckpt, root, commit, step).status == "pass":
+            verdicts[name] = evaluate(ckpt, root, commit, step)
+            if verdicts[name] == "pass":
                 accepted.append(name)
     n, k = len(names), len(accepted)
     lo, hi = wilson(k, n)
@@ -79,6 +95,7 @@ def audit(
         "accepted": accepted,
         "false_accept_rate": round(k / n, 4) if n else 0.0,
         "interval95": [round(lo, 4), round(hi, 4)],
+        "verdicts": verdicts,
     }
 
 
