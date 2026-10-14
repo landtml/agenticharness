@@ -24,7 +24,7 @@ from .blobs import BlobStore
 from .journal import Journal
 from .pricing import DEFAULT_BOOK, DEFAULT_PRICES, Price, PriceBook
 from .providers.anthropic import AnthropicProvider
-from .providers.base import Provider, ProviderDown, ProviderResponse, ProviderUnavailable
+from .providers.base import Provider, ProviderDown, ProviderResponse, ProviderUnavailable, RateLimited
 
 __all__ = [
     "AnthropicProvider",
@@ -118,8 +118,15 @@ class ModelGateway:
         breaker: CircuitBreaker | None = None,
         sleep: Callable[[float], None] = time.sleep,
         prices: PriceBook | None = None,
+        max_concurrent_calls: int | None = None,
+        rate_limit_retries: int = 8,
+        max_rate_wait_s: float = 120.0,
     ):
         self.journal = journal
+        # one gate for every run in this process: parallel runs share the provider's rate limit
+        self._slots = threading.BoundedSemaphore(max_concurrent_calls) if max_concurrent_calls else None
+        self.rate_limit_retries = rate_limit_retries
+        self.max_rate_wait_s = max_rate_wait_s
         self.blobs = blobs
         self.provider = provider
         self.retries = retries
@@ -170,18 +177,33 @@ class ModelGateway:
             reservation,
         )
         last_error: Exception | None = None
-        for i in range(self.retries + 1):
+        failures = limited = 0
+        while failures <= self.retries:
             if not self.breaker.allow():
                 last_error = ProviderDown("circuit breaker open")
                 break
             t0 = time.monotonic()
             try:
-                resp = self.provider.complete(request)
+                if self._slots is not None:
+                    with self._slots:
+                        resp = self.provider.complete(request)
+                else:
+                    resp = self.provider.complete(request)
+            except RateLimited as e:
+                # The provider is up; it wants us slower. Wait as told, without tripping the breaker.
+                limited += 1
+                last_error = e
+                if limited > self.rate_limit_retries:
+                    break
+                wait = e.retry_after if e.retry_after is not None else self.backoff_s * (2 ** min(limited, 6))
+                self.sleep(min(wait, self.max_rate_wait_s))
+                continue
             except ProviderUnavailable as e:
                 self.breaker.record(False)
                 last_error = e
-                if i < self.retries:
-                    self.sleep(self.backoff_s * (2**i))
+                failures += 1
+                if failures <= self.retries:
+                    self.sleep(self.backoff_s * (2 ** (failures - 1)))
                 continue
             except Exception as e:
                 self.journal.settle(call_id, 0.0, {"error": repr(e)[:2000]}, status="error")
@@ -220,4 +242,4 @@ class ModelGateway:
             )
             return resp
         self.journal.settle(call_id, 0.0, {"error": repr(last_error)[:2000]}, status="error")
-        raise ProviderDown(f"provider unavailable after {self.retries + 1} tries: {last_error}")
+        raise ProviderDown(f"provider unavailable after {failures + limited} tries: {last_error}")

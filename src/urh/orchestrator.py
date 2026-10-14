@@ -56,6 +56,7 @@ class HarnessConfig:
     max_auto_topups: int = 0  # ... at most this many times per run
     outage_wake_s: float = 300.0  # an outage park wakes itself after this long
     use_judge: bool = True  # a model judge decides steps no script check covers
+    max_concurrent_calls: int | None = None  # provider calls in flight at once, across every run here
     max_crashes: int = 3  # unexpected exceptions on one run before it parks as harness_error
     escalate: bool = True  # one attempt on the escalation model before repairs_exhausted parks
 
@@ -101,6 +102,7 @@ class Harness:
             retries=self.config.provider_retries,
             backoff_s=self.config.provider_backoff_s,
             prices=prices,
+            max_concurrent_calls=self.config.max_concurrent_calls,
         )
         if adapters is None:
             adapters = [OutboxFileAdapter(os.path.join(self.home, "outbox"))]

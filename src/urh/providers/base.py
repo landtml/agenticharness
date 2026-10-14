@@ -24,7 +24,22 @@ class Provider(Protocol):
 
 
 class ProviderUnavailable(Exception):
-    """Transient: connection error, 429, 5xx. Counts toward the circuit breaker."""
+    """Transient: connection error, 5xx, overload. Counts toward the circuit breaker."""
+
+
+class RateLimited(ProviderUnavailable):
+    """429: the provider is up but wants us slower. Waits ``retry_after``; never trips the breaker."""
+
+    def __init__(self, message: str, retry_after: float | None = None):
+        super().__init__(message)
+        self.retry_after = retry_after
+
+
+def parse_retry_after(value: str | None) -> float | None:
+    try:
+        return max(0.0, float(value)) if value is not None else None
+    except ValueError:
+        return None  # an HTTP date: fall back to our own backoff
 
 
 class ProviderDown(Exception):

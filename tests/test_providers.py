@@ -156,3 +156,24 @@ def test_roles_map_to_any_model_ids(tmp_path, hidden):
     # The canonical request never carries vendor-specific fields.
     req = json.loads(h.blobs.get_bytes(calls[0]["request_blob"]))
     assert "output_config" not in req and req["model"] == "vendor/small-coder"
+
+
+def test_openai_compatible_maps_429_to_rate_limited_with_retry_after(monkeypatch):
+    import email.message
+    import urllib.error
+
+    import pytest
+
+    from urh.providers.base import RateLimited
+    from urh.providers.openai_compat import OpenAICompatibleProvider
+
+    hdrs = email.message.Message()
+    hdrs["retry-after"] = "3"
+
+    def boom(*a, **k):
+        raise urllib.error.HTTPError("http://x", 429, "slow down", hdrs, None)
+
+    monkeypatch.setattr("urllib.request.urlopen", boom)
+    with pytest.raises(RateLimited) as e:
+        OpenAICompatibleProvider("http://x").complete({"model": "m", "max_tokens": 5, "messages": []})
+    assert e.value.retry_after == 3.0
