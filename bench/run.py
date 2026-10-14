@@ -65,8 +65,11 @@ def hidden_pass(home: str, rid: str, name: str) -> bool:
         return subprocess.run(cmd, cwd=tree, capture_output=True, timeout=300).returncode == 0
 
 
-def run_task(name: str, provider: str, home: str, budget: float, planner_effort: str, mode: str) -> dict:
+def run_task(
+    name: str, provider: str, home: str, budget: float, planner_effort: str, mode: str, models: dict[str, str]
+) -> dict:
     cfg = HarnessConfig(planner_effort=planner_effort, outage_wake_s=OUTAGE_WAKE_S)
+    cfg.models.update(models)
     h = Harness(home, _provider(provider), config=cfg)
     t0 = time.time()
     spec = baseline_spec(name, budget) if mode == "plain" else task_spec(name, budget)
@@ -109,6 +112,7 @@ def run_task(name: str, provider: str, home: str, budget: float, planner_effort:
         "auto_wakes": wakes,
         "escalations": sum(1 for e in events if e["kind"] == "escalated"),
         "escalations_skipped": sum(1 for e in events if e["kind"] == "escalation_skipped"),
+        "models": h.journal.get_run(rid).pins["models"],
         "stats": journal_stats(h.journal),
     }
 
@@ -140,9 +144,17 @@ def main() -> int:
     ap.add_argument("--planner-effort", default="medium")
     ap.add_argument("--mode", choices=["harness", "plain"], default="harness")
     ap.add_argument("--repeat", type=int, default=1)
+    ap.add_argument(
+        "--model",
+        action="append",
+        default=[],
+        metavar="ROLE=MODEL",
+        help="pin a role's model, e.g. manager=...",
+    )
     ap.add_argument("--out")
     ap.add_argument("--keep", help="keep each run's harness home (journal, blobs, repo) under this directory")
     args = ap.parse_args()
+    models = dict(m.split("=", 1) for m in args.model)
     names = args.tasks or sorted(os.listdir(os.path.join(HERE, "tasks")))
     rows = []
     with tempfile.TemporaryDirectory(prefix="urh-bench-") as scratch:
@@ -150,7 +162,7 @@ def main() -> int:
         for k, name in enumerate(n for n in names for _ in range(args.repeat)):
             home = os.path.join(tmp, f"{name}-{k}")
             try:
-                row = run_task(name, args.provider, home, args.budget, args.planner_effort, args.mode)
+                row = run_task(name, args.provider, home, args.budget, args.planner_effort, args.mode, models)
             except Exception as e:  # a harness crash is a result, and the worst one
                 row = {
                     "task": name,
