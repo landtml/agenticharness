@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "urh-gate"
+version = "2.0.0"
+description = "Verification gate for the Upper-Right Harness: hidden contracts, sandboxed differential testing, plan-check vetting"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+urh_gate = ["*.py"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

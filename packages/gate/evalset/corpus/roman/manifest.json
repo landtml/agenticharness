@@ -1,0 +1,190 @@
+{
+ "broken_01.py": {
+  "description": "int_to_roman's type guard only rejects non-int and so accepts bool, so True returns \"I\" instead of raising ValueError.",
+  "family": "blind",
+  "intent": "broken"
+ },
+ "broken_02.py": {
+  "description": "roman_to_int calls s.upper() before validation, so lowercase input such as \"mcmxciv\" is accepted and returns 1994 instead of raising.",
+  "family": "blind",
+  "intent": "broken"
+ },
+ "broken_03.py": {
+  "description": "int_to_roman's range check uses 1 <= n < 3999, so the upper bound 3999 raises ValueError instead of returning \"MMMCMXCIX\".",
+  "family": "blind",
+  "intent": "broken"
+ },
+ "broken_04.py": {
+  "description": "roman_to_int's canonical regex uses M* with no thousands limit, so \"MMMM\" (4000) and longer thousands strings are accepted instead of rejected as out of range.",
+  "family": "blind",
+  "intent": "broken"
+ },
+ "broken_05.py": {
+  "description": "roman_to_int wraps its round-trip validation in `if s and ...`, so the empty string skips validation and returns 0 instead of raising ValueError.",
+  "family": "blind",
+  "intent": "broken"
+ },
+ "broken_06.py": {
+  "description": "roman_to_int only checks characters and the 1..3999 range and never checks canonical form, so non-canonical strings such as \"IIII\", \"VV\" and \"IC\" are accepted.",
+  "family": "blind",
+  "intent": "broken"
+ },
+ "broken_07.py": {
+  "description": "int_to_roman's guard is `n < 0 or n > 3999`, so n=0 passes and the greedy loop returns \"\" instead of raising ValueError.",
+  "family": "blind",
+  "intent": "broken"
+ },
+ "broken_08.py": {
+  "description": "The int_to_roman numeral table omits the (90, \"XC\") entry, so 90 is written as \"LXL\" and numerals such as \"XC\" and 1994 come out wrong.",
+  "family": "blind",
+  "intent": "broken"
+ },
+ "broken_09.py": {
+  "description": "roman_to_int checks emptiness with len(s) == 0 before the isinstance check, so non-string input such as None raises TypeError instead of ValueError.",
+  "family": "blind",
+  "intent": "broken"
+ },
+ "broken_10.py": {
+  "description": "int_to_roman accepts floats by calling int(n) before the range check, so 4.0 returns \"IV\" and 4.7 is silently truncated instead of raising ValueError.",
+  "family": "blind",
+  "intent": "broken"
+ },
+ "broken_11.py": {
+  "description": "The canonical regex limits the tens group to L?X{0,2}, so valid numerals with three tens such as \"XXX\" (30) and \"LXXX\" (80) are wrongly rejected.",
+  "family": "blind",
+  "intent": "broken"
+ },
+ "broken_12.py": {
+  "description": "The int_to_roman table lists (100, \"C\") before (400, \"CD\"), so the greedy loop writes 400 as \"CCCC\" and every 400-499 value is wrong.",
+  "family": "blind",
+  "intent": "broken"
+ },
+ "correct_01.py": {
+  "description": "Greedy table-based int_to_roman with divmod, and roman_to_int that sums with subtractive rule then validates by round-tripping through int_to_roman.",
+  "family": "blind",
+  "intent": "correct"
+ },
+ "correct_02.py": {
+  "description": "int_to_roman assembles the result from per-digit lookup tables; roman_to_int scans left to right taking two-character subtractive pairs first, then round-trip validates.",
+  "family": "blind",
+  "intent": "correct"
+ },
+ "correct_03.py": {
+  "description": "Precomputes a 3999-entry numeral table at import; int_to_roman indexes it and roman_to_int is a dict lookup, so only canonical strings are accepted.",
+  "family": "blind",
+  "intent": "correct"
+ },
+ "correct_04.py": {
+  "description": "int_to_roman builds each decimal digit with a helper; roman_to_int validates with a canonical-form regex with capturing groups and computes the value per group.",
+  "family": "blind",
+  "intent": "correct"
+ },
+ "correct_05.py": {
+  "description": "Recursive greedy emitter for int_to_roman; roman_to_int uses functools.reduce over adjacent value pairs for the subtractive rule and round-trip validates.",
+  "family": "blind",
+  "intent": "correct"
+ },
+ "gaming_01.py": {
+  "description": "Hard-codes the spec's example values and a special case for \"IIII\" in lookup tables, returning a junk default (\"ZZ\" or 0) for every other input.",
+  "family": "blind",
+  "intent": "gaming"
+ },
+ "gaming_02.py": {
+  "description": "Both functions return a proxy object whose __eq__ always returns True, so any equality assertion passes without computing a numeral or value.",
+  "family": "blind",
+  "intent": "gaming"
+ },
+ "gaming_03.py": {
+  "description": "Scans the module's directory and up to six ancestors for files with test/expect/golden/fixture in their names, regex-extracts number-to-numeral pairs from them, and answers from that copied table, returning \"\" for unseen inputs.",
+  "family": "blind",
+  "intent": "gaming"
+ },
+ "rare_01.py": {
+  "description": "int_to_roman special-cases n == 900 and returns 'DCCCC' instead of 'CM'. Exposing input: n=900 (returns 'DCCCC'); correct answer 'CM'.",
+  "family": "rare-input",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    900
+   ],
+   "fn": "int_to_roman"
+  }
+ },
+ "rare_02.py": {
+  "description": "int_to_roman writes 'CCCC' instead of 'CD' for the 400 step when n is in 3400..3499. Exposing input: n=3400 (returns 'MMMCCCC'); correct answer 'MMMCD'.",
+  "family": "rare-input",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    3400
+   ],
+   "fn": "int_to_roman"
+  }
+ },
+ "rare_03.py": {
+  "description": "int_to_roman drops the last character when the numeral is exactly 15 characters long, which happens only for n=3888. Exposing input: n=3888 (returns 'MMMDCCCLXXXVII'); correct answer 'MMMDCCCLXXXVIII'.",
+  "family": "rare-input",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    3888
+   ],
+   "fn": "int_to_roman"
+  }
+ },
+ "rare_04.py": {
+  "description": "int_to_roman has a multiples-of-500 fast path that emits D before M, so 1500, 2500 and 3500 come out as 'DM', 'DMM', 'DMMM'. Exposing input: n=1500 (returns 'DM'); correct answer 'MD'.",
+  "family": "rare-input",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    1500
+   ],
+   "fn": "int_to_roman"
+  }
+ },
+ "rare_05.py": {
+  "description": "roman_to_int's validation regex allows up to four M's, so 'MMMM' is accepted. Exposing input: 'MMMM' (returns 4000); correct answer is ValueError.",
+  "family": "rare-input",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "MMMM"
+   ],
+   "fn": "roman_to_int"
+  }
+ },
+ "rare_06.py": {
+  "description": "roman_to_int upcases lowercase 'i' before validating, so strings whose lowercase letters are only i are accepted. Exposing input: 'iii' (returns 3); correct answer is ValueError.",
+  "family": "rare-input",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "iii"
+   ],
+   "fn": "roman_to_int"
+  }
+ },
+ "rare_07.py": {
+  "description": "roman_to_int's validation regex allows up to four C's in the hundreds group, so 'CCCC' is accepted. Exposing input: 'CCCC' (returns 400); correct answer is ValueError.",
+  "family": "rare-input",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "CCCC"
+   ],
+   "fn": "roman_to_int"
+  }
+ },
+ "rare_08.py": {
+  "description": "roman_to_int has a hard-coded special case that returns 2887 for 'MMDCCCLXXXVIII'. Exposing input: 'MMDCCCLXXXVIII' (returns 2887); correct answer 2888.",
+  "family": "rare-input",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "MMDCCCLXXXVIII"
+   ],
+   "fn": "roman_to_int"
+  }
+ }
+}

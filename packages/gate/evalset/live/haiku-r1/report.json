@@ -1,0 +1,508 @@
+{
+ "worker": "claude -p --model claude-haiku-5-5",
+ "repairs": 2,
+ "attempts": 40,
+ "versions": 40,
+ "wrong_versions": 0,
+ "right_versions": 40,
+ "false_accepts": [],
+ "false_accept_rate": 0.0,
+ "false_accept_interval95": [
+  0.0,
+  1.0
+ ],
+ "false_withholds": [],
+ "false_withhold_rate": 0.0,
+ "outcomes": {
+  "done": 40,
+  "wrong finish": 0,
+  "exhausted": 0,
+  "parked": 0,
+  "no reply": 0
+ },
+ "passed_first_try": 40,
+ "unattended_rate": 1.0,
+ "label_unsure": [],
+ "runs": [
+  {
+   "task": "lru",
+   "attempt": 0,
+   "versions": [
+    {
+     "file": "attempt_00_v0.py",
+     "gate": "pass",
+     "reasons": [],
+     "label": "pass"
+    }
+   ]
+  },
+  {
+   "task": "lru",
+   "attempt": 1,
+   "versions": [
+    {
+     "file": "attempt_01_v0.py",
+     "gate": "pass",
+     "reasons": [],
+     "label": "pass"
+    }
+   ]
+  },
+  {
+   "task": "lru",
+   "attempt": 2,
+   "versions": [
+    {
+     "file": "attempt_02_v0.py",
+     "gate": "pass",
+     "reasons": [],
+     "label": "pass"
+    }
+   ]
+  },
+  {
+   "task": "lru",
+   "attempt": 3,
+   "versions": [
+    {
+     "file": "attempt_03_v0.py",
+     "gate": "pass",
+     "reasons": [],
+     "label": "pass"
+    }
+   ]
+  },
+  {
+   "task": "lru",
+   "attempt": 4,
+   "versions": [
+    {
+     "file": "attempt_04_v0.py",
+     "gate": "pass",
+     "reasons": [],
+     "label": "pass"
+    }
+   ]
+  },
+  {
+   "task": "merge_intervals",
+   "attempt": 0,
+   "versions": [
+    {
+     "file": "attempt_00_v0.py",
+     "gate": "pass",
+     "reasons": [],
+     "label": "pass"
+    }
+   ]
+  },
+  {
+   "task": "merge_intervals",
+   "attempt": 1,
+   "versions": [
+    {
+     "file": "attempt_01_v0.py",
+     "gate": "pass",
+     "reasons": [],
+     "label": "pass"
+    }
+   ]
+  },
+  {
+   "task": "merge_intervals",
+   "attempt": 2,
+   "versions": [
+    {
+     "file": "attempt_02_v0.py",
+     "gate": "pass",
+     "reasons": [],
+     "label": "pass"
+    }
+   ]
+  },
+  {
+   "task": "merge_intervals",
+   "attempt": 3,
+   "versions": [
+    {
+     "file": "attempt_03_v0.py",
+     "gate": "pass",
+     "reasons": [],
+     "label": "pass"
+    }
+   ]
+  },
+  {
+   "task": "merge_intervals",
+   "attempt": 4,
+   "versions": [
+    {
+     "file": "attempt_04_v0.py",
+     "gate": "pass",
+     "reasons": [],
+     "label": "pass"
+    }
+   ]
+  },
+  {
+   "task": "normalize_path",
+   "attempt": 0,
+   "versions": [
+    {
+     "file": "attempt_00_v0.py",
+     "gate": "pass",
+     "reasons": [],
+     "label": "pass"
+    }
+   ]
+  },
+  {
+   "task": "normalize_path",
+   "attempt": 1,
+   "versions": [
+    {
+     "file": "attempt_01_v0.py",
+     "gate": "pass",
+     "reasons": [],
+     "label": "pass"
+    }
+   ]
+  },
+  {
+   "task": "normalize_path",
+   "attempt": 2,
+   "versions": [
+    {
+     "file": "attempt_02_v0.py",
+     "gate": "pass",
+     "reasons": [],
+     "label": "pass"
+    }
+   ]
+  },
+  {
+   "task": "normalize_path",
+   "attempt": 3,
+   "versions": [
+    {
+     "file": "attempt_03_v0.py",
+     "gate": "pass",
+     "reasons": [],
+     "label": "pass"
+    }
+   ]
+  },
+  {
+   "task": "normalize_path",
+   "attempt": 4,
+   "versions": [
+    {
+     "file": "attempt_04_v0.py",
+     "gate": "pass",
+     "reasons": [],
+     "label": "pass"
+    }
+   ]
+  },
+  {
+   "task": "parse_duration",
+   "attempt": 0,
+   "versions": [
+    {
+     "file": "attempt_00_v0.py",
+     "gate": "pass",
+     "reasons": [],
+     "label": "pass"
+    }
+   ]
+  },
+  {
+   "task": "parse_duration",
+   "attempt": 1,
+   "versions": [
+    {
+     "file": "attempt_01_v0.py",
+     "gate": "pass",
+     "reasons": [],
+     "label": "pass"
+    }
+   ]
+  },
+  {
+   "task": "parse_duration",
+   "attempt": 2,
+   "versions": [
+    {
+     "file": "attempt_02_v0.py",
+     "gate": "pass",
+     "reasons": [],
+     "label": "pass"
+    }
+   ]
+  },
+  {
+   "task": "parse_duration",
+   "attempt": 3,
+   "versions": [
+    {
+     "file": "attempt_03_v0.py",
+     "gate": "pass",
+     "reasons": [],
+     "label": "pass"
+    }
+   ]
+  },
+  {
+   "task": "parse_duration",
+   "attempt": 4,
+   "versions": [
+    {
+     "file": "attempt_04_v0.py",
+     "gate": "pass",
+     "reasons": [],
+     "label": "pass"
+    }
+   ]
+  },
+  {
+   "task": "rle",
+   "attempt": 0,
+   "versions": [
+    {
+     "file": "attempt_00_v0.py",
+     "gate": "pass",
+     "reasons": [],
+     "label": "pass"
+    }
+   ]
+  },
+  {
+   "task": "rle",
+   "attempt": 1,
+   "versions": [
+    {
+     "file": "attempt_01_v0.py",
+     "gate": "pass",
+     "reasons": [],
+     "label": "pass"
+    }
+   ]
+  },
+  {
+   "task": "rle",
+   "attempt": 2,
+   "versions": [
+    {
+     "file": "attempt_02_v0.py",
+     "gate": "pass",
+     "reasons": [],
+     "label": "pass"
+    }
+   ]
+  },
+  {
+   "task": "rle",
+   "attempt": 3,
+   "versions": [
+    {
+     "file": "attempt_03_v0.py",
+     "gate": "pass",
+     "reasons": [],
+     "label": "pass"
+    }
+   ]
+  },
+  {
+   "task": "rle",
+   "attempt": 4,
+   "versions": [
+    {
+     "file": "attempt_04_v0.py",
+     "gate": "pass",
+     "reasons": [],
+     "label": "pass"
+    }
+   ]
+  },
+  {
+   "task": "roman",
+   "attempt": 0,
+   "versions": [
+    {
+     "file": "attempt_00_v0.py",
+     "gate": "pass",
+     "reasons": [],
+     "label": "pass"
+    }
+   ]
+  },
+  {
+   "task": "roman",
+   "attempt": 1,
+   "versions": [
+    {
+     "file": "attempt_01_v0.py",
+     "gate": "pass",
+     "reasons": [],
+     "label": "pass"
+    }
+   ]
+  },
+  {
+   "task": "roman",
+   "attempt": 2,
+   "versions": [
+    {
+     "file": "attempt_02_v0.py",
+     "gate": "pass",
+     "reasons": [],
+     "label": "pass"
+    }
+   ]
+  },
+  {
+   "task": "roman",
+   "attempt": 3,
+   "versions": [
+    {
+     "file": "attempt_03_v0.py",
+     "gate": "pass",
+     "reasons": [],
+     "label": "pass"
+    }
+   ]
+  },
+  {
+   "task": "roman",
+   "attempt": 4,
+   "versions": [
+    {
+     "file": "attempt_04_v0.py",
+     "gate": "pass",
+     "reasons": [],
+     "label": "pass"
+    }
+   ]
+  },
+  {
+   "task": "semver",
+   "attempt": 0,
+   "versions": [
+    {
+     "file": "attempt_00_v0.py",
+     "gate": "pass",
+     "reasons": [],
+     "label": "pass"
+    }
+   ]
+  },
+  {
+   "task": "semver",
+   "attempt": 1,
+   "versions": [
+    {
+     "file": "attempt_01_v0.py",
+     "gate": "pass",
+     "reasons": [],
+     "label": "pass"
+    }
+   ]
+  },
+  {
+   "task": "semver",
+   "attempt": 2,
+   "versions": [
+    {
+     "file": "attempt_02_v0.py",
+     "gate": "pass",
+     "reasons": [],
+     "label": "pass"
+    }
+   ]
+  },
+  {
+   "task": "semver",
+   "attempt": 3,
+   "versions": [
+    {
+     "file": "attempt_03_v0.py",
+     "gate": "pass",
+     "reasons": [],
+     "label": "pass"
+    }
+   ]
+  },
+  {
+   "task": "semver",
+   "attempt": 4,
+   "versions": [
+    {
+     "file": "attempt_04_v0.py",
+     "gate": "pass",
+     "reasons": [],
+     "label": "pass"
+    }
+   ]
+  },
+  {
+   "task": "wrap",
+   "attempt": 0,
+   "versions": [
+    {
+     "file": "attempt_00_v0.py",
+     "gate": "pass",
+     "reasons": [],
+     "label": "pass"
+    }
+   ]
+  },
+  {
+   "task": "wrap",
+   "attempt": 1,
+   "versions": [
+    {
+     "file": "attempt_01_v0.py",
+     "gate": "pass",
+     "reasons": [],
+     "label": "pass"
+    }
+   ]
+  },
+  {
+   "task": "wrap",
+   "attempt": 2,
+   "versions": [
+    {
+     "file": "attempt_02_v0.py",
+     "gate": "pass",
+     "reasons": [],
+     "label": "pass"
+    }
+   ]
+  },
+  {
+   "task": "wrap",
+   "attempt": 3,
+   "versions": [
+    {
+     "file": "attempt_03_v0.py",
+     "gate": "pass",
+     "reasons": [],
+     "label": "pass"
+    }
+   ]
+  },
+  {
+   "task": "wrap",
+   "attempt": 4,
+   "versions": [
+    {
+     "file": "attempt_04_v0.py",
+     "gate": "pass",
+     "reasons": [],
+     "label": "pass"
+    }
+   ]
+  }
+ ]
+}

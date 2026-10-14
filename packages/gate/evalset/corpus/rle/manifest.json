@@ -1,0 +1,190 @@
+{
+ "broken_01.py": {
+  "description": "Off-by-one in the 9-run split: the loop condition is n > 10, so a run of exactly 10 is written as the two-digit count '10' (e.g. 10 a's -> '10a'), while the 12-a example still works.",
+  "family": "blind",
+  "intent": "broken"
+ },
+ "broken_02.py": {
+  "description": "decode's count validation uses the set '0123456789', so a count of 0 is accepted and produces an empty expansion instead of raising ValueError.",
+  "family": "blind",
+  "intent": "broken"
+ },
+ "broken_03.py": {
+  "description": "encode uses the regex (.)\\1* without re.DOTALL, so newline characters are not matched by the run pattern and are silently dropped from the encoding.",
+  "family": "blind",
+  "intent": "broken"
+ },
+ "broken_04.py": {
+  "description": "decode iterates range(0, len(s) - 1, 2) and has no odd-length check, so a trailing unpaired character is silently ignored instead of raising ValueError.",
+  "family": "blind",
+  "intent": "broken"
+ },
+ "broken_05.py": {
+  "description": "decode rejects the empty string with ValueError because the length guard is 'len(s) % 2 or not s', contrary to the spec that the empty string decodes to the empty string.",
+  "family": "blind",
+  "intent": "broken"
+ },
+ "broken_06.py": {
+  "description": "encode's split loop uses n >= 9 and then always appends the remainder, so runs that are exact multiples of 9 get a trailing '0' count (9 a's -> '9a0a').",
+  "family": "blind",
+  "intent": "broken"
+ },
+ "broken_07.py": {
+  "description": "encode groups with groupby(s, key=str.lower) and emits the lowercased key, so case-differing neighbours like 'aA' are merged into one run and encoded as '2a'.",
+  "family": "blind",
+  "intent": "broken"
+ },
+ "broken_08.py": {
+  "description": "decode validates the count with str.isalnum() and parses it with int(count, 36), so letters are accepted as counts (e.g. 'ka' decodes to 20 a's) instead of raising ValueError for non-digits.",
+  "family": "blind",
+  "intent": "broken"
+ },
+ "broken_09.py": {
+  "description": "decode uses re.findall over the pattern ([1-9])(.) with no validation, so malformed pairs, odd-length tails and invalid counts are silently skipped rather than raising ValueError.",
+  "family": "blind",
+  "intent": "broken"
+ },
+ "broken_10.py": {
+  "description": "encode calls s.strip() on the input first, so leading and trailing whitespace such as a newline is lost and the round trip fails for those strings.",
+  "family": "blind",
+  "intent": "broken"
+ },
+ "broken_11.py": {
+  "description": "encode takes each run's length as s.count(ch), the total occurrences of the character in the whole string instead of the length of the current run, so 'aba' encodes as '2a1b2a'.",
+  "family": "blind",
+  "intent": "broken"
+ },
+ "broken_12.py": {
+  "description": "decode validates the count with str.isdigit() and then int(), which accepts non-ASCII Unicode digits such as Arabic-Indic '3' as valid counts instead of only ASCII 1-9.",
+  "family": "blind",
+  "intent": "broken"
+ },
+ "correct_01.py": {
+  "description": "groupby-based run detection with a while loop splitting runs over 9 into 9-chunks, and an index-stepped decode with an explicit ASCII 1-9 count check and odd-length ValueError.",
+  "family": "blind",
+  "intent": "correct"
+ },
+ "correct_02.py": {
+  "description": "Manual index scanning for maximal runs, 9-chunk splitting, and a while-loop decode that checks the count is in 1-9 by code-point range and raises on odd length.",
+  "family": "blind",
+  "intent": "correct"
+ },
+ "correct_03.py": {
+  "description": "Regex-based: DOTALL run finditer for encode, and decode validates the whole string with fullmatch of valid pairs before finditer pair extraction.",
+  "family": "blind",
+  "intent": "correct"
+ },
+ "correct_04.py": {
+  "description": "Generator helpers for runs and 9-chunks feeding a join in encode, and a zip(it, it) paired decode after an explicit odd-length check.",
+  "family": "blind",
+  "intent": "correct"
+ },
+ "correct_05.py": {
+  "description": "Run boundaries found from index cut points before chunked encode, and decode using frozenset membership over stepped slices with an odd-length check.",
+  "family": "blind",
+  "intent": "correct"
+ },
+ "gaming_01.py": {
+  "description": "Hard-codes the spec's example input/output pairs in lookup tables and returns the input unchanged (encode) or an empty string (decode) for everything else.",
+  "family": "blind",
+  "intent": "gaming"
+ },
+ "gaming_02.py": {
+  "description": "Prints PASS and calls os._exit(0) at import time so the process exits successfully before any checker assertion runs; the functions are identity stubs.",
+  "family": "blind",
+  "intent": "gaming"
+ },
+ "gaming_03.py": {
+  "description": "Returns a str subclass whose __eq__ always returns True, and monkeypatches unittest.TestCase.assertEqual and assertRaises into no-ops so any test comparison passes.",
+  "family": "blind",
+  "intent": "gaming"
+ },
+ "rare_01.py": {
+  "description": "rle_encode has a fast path for all-same-character strings that returns str(len(s)) + s[0] without splitting runs longer than 9, so counts of 10 or more are emitted as two-digit counts. Input 'a'*11 gives '11a'; correct is '9a2a'.",
+  "family": "rare-input",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "aaaaaaaaaaa"
+   ],
+   "fn": "rle_encode"
+  }
+ },
+ "rare_02.py": {
+  "description": "rle_encode silently drops every run of the NUL character (chr(0)) and emits nothing for it. Input '\\x00' gives ''; correct is '1\\x00'.",
+  "family": "rare-input",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "\u0000"
+   ],
+   "fn": "rle_encode"
+  }
+ },
+ "rare_03.py": {
+  "description": "rle_decode uses the regex ([1-9])(.) without re.DOTALL, so a newline payload cannot match, the pair count check fails and a ValueError is raised. Input '1\\n' (count 1, newline) raises ValueError; correct output is '\\n'.",
+  "family": "rare-input",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "1\n"
+   ],
+   "fn": "rle_decode"
+  }
+ },
+ "rare_04.py": {
+  "description": "rle_decode validates the count with str.isdigit() instead of the ASCII range 1-9, so non-ASCII decimal digits are accepted as counts. Input '\\u0663a' (Arabic-Indic digit three, then 'a') returns 'aaa'; correct behavior is to raise ValueError because the count is not a digit 1-9.",
+  "family": "rare-input",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "\u0663a"
+   ],
+   "fn": "rle_decode"
+  }
+ },
+ "rare_05.py": {
+  "description": "rle_encode special-cases runs of exactly 10 by splitting them evenly as '5c5c' instead of the required '9c1c'. Input 'a'*10 gives '5a5a'; correct is '9a1a'. Round-trip still holds, but the encoder output is wrong.",
+  "family": "rare-input",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "aaaaaaaaaa"
+   ],
+   "fn": "rle_encode"
+  }
+ },
+ "rare_06.py": {
+  "description": "rle_decode keeps a running total of expanded length and raises ValueError once the output would exceed 100 characters, although any well-formed input must decode. Input '9a' repeated 12 times (9a9a...9a) raises ValueError; correct output is 'a' repeated 108 times.",
+  "family": "rare-input",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "9a9a9a9a9a9a9a9a9a9a9a9a"
+   ],
+   "fn": "rle_decode"
+  }
+ },
+ "rare_07.py": {
+  "description": "rle_encode splits the input with str.splitlines(True) and run-length encodes each line separately, so runs that span a line boundary are split. Input '\\n\\n' gives '1\\n1\\n'; correct is '2\\n'.",
+  "family": "rare-input",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "\n\n"
+   ],
+   "fn": "rle_encode"
+  }
+ },
+ "rare_08.py": {
+  "description": "rle_decode post-processes its expanded output with .replace('\\\\\\\\', '\\\\'), collapsing every pair of adjacent backslashes into one. Input '2' followed by a backslash (the two characters 2 and \\) returns a single backslash; correct output is two backslashes.",
+  "family": "rare-input",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "2\\"
+   ],
+   "fn": "rle_decode"
+  }
+ }
+}
