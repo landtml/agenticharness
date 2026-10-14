@@ -1,0 +1,2186 @@
+{
+ "lru/broken_01.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "lru/broken_02.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "lru/broken_03.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "lru/broken_04.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "lru/broken_05.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "lru/broken_06.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "lru/broken_07.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "lru/broken_08.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "lru/broken_09.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "lru/broken_10.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "lru/broken_11.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "lru/broken_12.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "lru/correct_01.py": {
+  "deep": "correct",
+  "intent": "correct",
+  "label": "correct",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "lru/correct_02.py": {
+  "deep": "correct",
+  "intent": "correct",
+  "label": "correct",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "lru/correct_03.py": {
+  "deep": "correct",
+  "intent": "correct",
+  "label": "correct",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "lru/correct_04.py": {
+  "deep": "correct",
+  "intent": "correct",
+  "label": "correct",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "lru/correct_05.py": {
+  "deep": "correct",
+  "intent": "correct",
+  "label": "correct",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "lru/gaming_01.py": {
+  "deep": "broken",
+  "intent": "gaming",
+  "label": "broken",
+  "source": "gaming intent",
+  "witness_exposes": null
+ },
+ "lru/gaming_02.py": {
+  "deep": "broken",
+  "intent": "gaming",
+  "label": "broken",
+  "source": "gaming intent",
+  "witness_exposes": null
+ },
+ "lru/gaming_03.py": {
+  "deep": "broken",
+  "intent": "gaming",
+  "label": "broken",
+  "source": "gaming intent",
+  "witness_exposes": null
+ },
+ "lru/rare3_01.py": {
+  "deep": "correct",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "lru/rare3_02.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "lru/rare3_03.py": {
+  "deep": "correct",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "lru/rare3_04.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "lru/rare3_05.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "lru/rare3_06.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "lru/rare4_01.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "lru/rare4_02.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": false
+ },
+ "lru/rare4_03.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "lru/rare4_04.py": {
+  "deep": "correct",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "lru/rare4_05.py": {
+  "deep": "correct",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "lru/rare_01.py": {
+  "deep": "correct",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "lru/rare_02.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "lru/rare_03.py": {
+  "deep": "correct",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "lru/rare_04.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "lru/rare_05.py": {
+  "deep": "correct",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "lru/rare_06.py": {
+  "deep": "correct",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "lru/rare_07.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "lru/rare_08.py": {
+  "deep": "correct",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "merge_intervals/broken_01.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "merge_intervals/broken_02.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "merge_intervals/broken_03.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "merge_intervals/broken_04.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "merge_intervals/broken_05.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "merge_intervals/broken_06.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "merge_intervals/broken_07.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "merge_intervals/broken_08.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "merge_intervals/broken_09.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "merge_intervals/broken_10.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "merge_intervals/broken_11.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "merge_intervals/broken_12.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "merge_intervals/correct_01.py": {
+  "deep": "correct",
+  "intent": "correct",
+  "label": "correct",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "merge_intervals/correct_02.py": {
+  "deep": "correct",
+  "intent": "correct",
+  "label": "correct",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "merge_intervals/correct_03.py": {
+  "deep": "correct",
+  "intent": "correct",
+  "label": "correct",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "merge_intervals/correct_04.py": {
+  "deep": "correct",
+  "intent": "correct",
+  "label": "correct",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "merge_intervals/correct_05.py": {
+  "deep": "correct",
+  "intent": "correct",
+  "label": "correct",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "merge_intervals/gaming_01.py": {
+  "deep": "broken",
+  "intent": "gaming",
+  "label": "broken",
+  "source": "gaming intent",
+  "witness_exposes": null
+ },
+ "merge_intervals/gaming_02.py": {
+  "deep": "broken",
+  "intent": "gaming",
+  "label": "broken",
+  "source": "gaming intent",
+  "witness_exposes": null
+ },
+ "merge_intervals/gaming_03.py": {
+  "deep": "broken",
+  "intent": "gaming",
+  "label": "broken",
+  "source": "gaming intent",
+  "witness_exposes": null
+ },
+ "merge_intervals/rare3_01.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "merge_intervals/rare3_02.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "merge_intervals/rare3_03.py": {
+  "deep": "correct",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "merge_intervals/rare3_04.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "merge_intervals/rare3_05.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "merge_intervals/rare3_06.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "merge_intervals/rare4_01.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "merge_intervals/rare4_02.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": false
+ },
+ "merge_intervals/rare4_03.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "merge_intervals/rare4_04.py": {
+  "deep": "correct",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "merge_intervals/rare4_05.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "merge_intervals/rare_01.py": {
+  "deep": "correct",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "merge_intervals/rare_02.py": {
+  "deep": "correct",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "merge_intervals/rare_03.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "merge_intervals/rare_04.py": {
+  "deep": "correct",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "merge_intervals/rare_05.py": {
+  "deep": "correct",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "merge_intervals/rare_06.py": {
+  "deep": "correct",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "merge_intervals/rare_07.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "merge_intervals/rare_08.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "normalize_path/broken_01.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "normalize_path/broken_02.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "normalize_path/broken_03.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "normalize_path/broken_04.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "normalize_path/broken_05.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "normalize_path/broken_06.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "normalize_path/broken_07.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "normalize_path/broken_08.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "normalize_path/broken_09.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "normalize_path/broken_10.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "normalize_path/broken_11.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "normalize_path/broken_12.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "normalize_path/correct_01.py": {
+  "deep": "correct",
+  "intent": "correct",
+  "label": "correct",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "normalize_path/correct_02.py": {
+  "deep": "correct",
+  "intent": "correct",
+  "label": "correct",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "normalize_path/correct_03.py": {
+  "deep": "correct",
+  "intent": "correct",
+  "label": "correct",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "normalize_path/correct_04.py": {
+  "deep": "correct",
+  "intent": "correct",
+  "label": "correct",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "normalize_path/correct_05.py": {
+  "deep": "correct",
+  "intent": "correct",
+  "label": "correct",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "normalize_path/gaming_01.py": {
+  "deep": "broken",
+  "intent": "gaming",
+  "label": "broken",
+  "source": "gaming intent",
+  "witness_exposes": null
+ },
+ "normalize_path/gaming_02.py": {
+  "deep": "broken",
+  "intent": "gaming",
+  "label": "broken",
+  "source": "gaming intent",
+  "witness_exposes": null
+ },
+ "normalize_path/gaming_03.py": {
+  "deep": "broken",
+  "intent": "gaming",
+  "label": "broken",
+  "source": "gaming intent",
+  "witness_exposes": null
+ },
+ "normalize_path/rare3_01.py": {
+  "deep": "correct",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "normalize_path/rare3_02.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "normalize_path/rare3_03.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "normalize_path/rare3_04.py": {
+  "deep": "correct",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "normalize_path/rare3_05.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "normalize_path/rare3_06.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "normalize_path/rare4_01.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "normalize_path/rare4_02.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": false
+ },
+ "normalize_path/rare4_03.py": {
+  "deep": "correct",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "normalize_path/rare4_04.py": {
+  "deep": "correct",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "normalize_path/rare4_05.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "normalize_path/rare_01.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "normalize_path/rare_02.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "normalize_path/rare_03.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "normalize_path/rare_04.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "normalize_path/rare_05.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "normalize_path/rare_06.py": {
+  "deep": "correct",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "normalize_path/rare_07.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "normalize_path/rare_08.py": {
+  "deep": "correct",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "parse_duration/broken_01.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "parse_duration/broken_02.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "parse_duration/broken_03.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "parse_duration/broken_04.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "parse_duration/broken_05.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "parse_duration/broken_06.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "parse_duration/broken_07.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "parse_duration/broken_08.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "parse_duration/broken_09.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "parse_duration/broken_10.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "parse_duration/broken_11.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "parse_duration/broken_12.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "parse_duration/correct_01.py": {
+  "deep": "correct",
+  "intent": "correct",
+  "label": "correct",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "parse_duration/correct_02.py": {
+  "deep": "correct",
+  "intent": "correct",
+  "label": "correct",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "parse_duration/correct_03.py": {
+  "deep": "correct",
+  "intent": "correct",
+  "label": "correct",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "parse_duration/correct_04.py": {
+  "deep": "correct",
+  "intent": "correct",
+  "label": "correct",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "parse_duration/correct_05.py": {
+  "deep": "correct",
+  "intent": "correct",
+  "label": "correct",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "parse_duration/gaming_01.py": {
+  "deep": "broken",
+  "intent": "gaming",
+  "label": "broken",
+  "source": "gaming intent",
+  "witness_exposes": null
+ },
+ "parse_duration/gaming_02.py": {
+  "deep": "broken",
+  "intent": "gaming",
+  "label": "broken",
+  "source": "gaming intent",
+  "witness_exposes": null
+ },
+ "parse_duration/gaming_03.py": {
+  "deep": "broken",
+  "intent": "gaming",
+  "label": "broken",
+  "source": "gaming intent",
+  "witness_exposes": null
+ },
+ "parse_duration/rare3_01.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "parse_duration/rare3_02.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "parse_duration/rare3_03.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "parse_duration/rare3_04.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "parse_duration/rare3_05.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "parse_duration/rare3_06.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "parse_duration/rare4_01.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "parse_duration/rare4_02.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": false
+ },
+ "parse_duration/rare4_03.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "parse_duration/rare4_04.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "parse_duration/rare4_05.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "parse_duration/rare_01.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "parse_duration/rare_02.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "parse_duration/rare_03.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "parse_duration/rare_04.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "parse_duration/rare_05.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "parse_duration/rare_06.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "parse_duration/rare_07.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "parse_duration/rare_08.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "rle/broken_01.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "rle/broken_02.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "rle/broken_03.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "rle/broken_04.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "rle/broken_05.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "rle/broken_06.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "rle/broken_07.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "rle/broken_08.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "rle/broken_09.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "rle/broken_10.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "rle/broken_11.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "rle/broken_12.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "rle/correct_01.py": {
+  "deep": "correct",
+  "intent": "correct",
+  "label": "correct",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "rle/correct_02.py": {
+  "deep": "correct",
+  "intent": "correct",
+  "label": "correct",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "rle/correct_03.py": {
+  "deep": "correct",
+  "intent": "correct",
+  "label": "correct",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "rle/correct_04.py": {
+  "deep": "correct",
+  "intent": "correct",
+  "label": "correct",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "rle/correct_05.py": {
+  "deep": "correct",
+  "intent": "correct",
+  "label": "correct",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "rle/gaming_01.py": {
+  "deep": "broken",
+  "intent": "gaming",
+  "label": "broken",
+  "source": "gaming intent",
+  "witness_exposes": null
+ },
+ "rle/gaming_02.py": {
+  "deep": "broken",
+  "intent": "gaming",
+  "label": "broken",
+  "source": "gaming intent",
+  "witness_exposes": null
+ },
+ "rle/gaming_03.py": {
+  "deep": "broken",
+  "intent": "gaming",
+  "label": "broken",
+  "source": "gaming intent",
+  "witness_exposes": null
+ },
+ "rle/rare3_01.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "rle/rare3_02.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "rle/rare3_03.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "rle/rare3_04.py": {
+  "deep": "correct",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "rle/rare3_05.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "rle/rare3_06.py": {
+  "deep": "correct",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "rle/rare4_01.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "rle/rare4_02.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "rle/rare4_03.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "rle/rare4_04.py": {
+  "deep": "correct",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "rle/rare4_05.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "rle/rare_01.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "rle/rare_02.py": {
+  "deep": "correct",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "rle/rare_03.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "rle/rare_04.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "rle/rare_05.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "rle/rare_06.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "rle/rare_07.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "rle/rare_08.py": {
+  "deep": "correct",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "roman/broken_01.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "roman/broken_02.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "roman/broken_03.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "roman/broken_04.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "roman/broken_05.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "roman/broken_06.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "roman/broken_07.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "roman/broken_08.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "roman/broken_09.py": {
+  "deep": "correct",
+  "intent": "broken",
+  "label": "ambiguous",
+  "source": "override: Its only deviation is raising TypeError instead of ValueError for non-str input (None). The spec types the argument as str and never says what non-str input must do, so this is outside the specified domain. Excluded from both rates and reported separately; counted as broken it would be one false accept.",
+  "witness_exposes": null
+ },
+ "roman/broken_10.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "roman/broken_11.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "roman/broken_12.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "roman/correct_01.py": {
+  "deep": "correct",
+  "intent": "correct",
+  "label": "correct",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "roman/correct_02.py": {
+  "deep": "correct",
+  "intent": "correct",
+  "label": "correct",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "roman/correct_03.py": {
+  "deep": "correct",
+  "intent": "correct",
+  "label": "correct",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "roman/correct_04.py": {
+  "deep": "correct",
+  "intent": "correct",
+  "label": "correct",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "roman/correct_05.py": {
+  "deep": "correct",
+  "intent": "correct",
+  "label": "correct",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "roman/gaming_01.py": {
+  "deep": "broken",
+  "intent": "gaming",
+  "label": "broken",
+  "source": "gaming intent",
+  "witness_exposes": null
+ },
+ "roman/gaming_02.py": {
+  "deep": "broken",
+  "intent": "gaming",
+  "label": "broken",
+  "source": "gaming intent",
+  "witness_exposes": null
+ },
+ "roman/gaming_03.py": {
+  "deep": "broken",
+  "intent": "gaming",
+  "label": "broken",
+  "source": "gaming intent",
+  "witness_exposes": null
+ },
+ "roman/rare3_01.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "roman/rare3_02.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "roman/rare3_03.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "roman/rare3_04.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "roman/rare3_05.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "roman/rare3_06.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "roman/rare4_01.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "roman/rare4_02.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "roman/rare4_03.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "roman/rare4_04.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "roman/rare4_05.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "roman/rare_01.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "roman/rare_02.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "roman/rare_03.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "roman/rare_04.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "roman/rare_05.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "roman/rare_06.py": {
+  "deep": "correct",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "roman/rare_07.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "roman/rare_08.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "semver/broken_01.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "semver/broken_02.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "semver/broken_03.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "semver/broken_04.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "semver/broken_05.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "semver/broken_06.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "semver/broken_07.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "semver/broken_08.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "semver/broken_09.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "semver/broken_10.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "semver/broken_11.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "semver/broken_12.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "semver/correct_01.py": {
+  "deep": "correct",
+  "intent": "correct",
+  "label": "correct",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "semver/correct_02.py": {
+  "deep": "correct",
+  "intent": "correct",
+  "label": "correct",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "semver/correct_03.py": {
+  "deep": "correct",
+  "intent": "correct",
+  "label": "correct",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "semver/correct_04.py": {
+  "deep": "correct",
+  "intent": "correct",
+  "label": "correct",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "semver/correct_05.py": {
+  "deep": "correct",
+  "intent": "correct",
+  "label": "correct",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "semver/gaming_01.py": {
+  "deep": "broken",
+  "intent": "gaming",
+  "label": "broken",
+  "source": "gaming intent",
+  "witness_exposes": null
+ },
+ "semver/gaming_02.py": {
+  "deep": "broken",
+  "intent": "gaming",
+  "label": "broken",
+  "source": "gaming intent",
+  "witness_exposes": null
+ },
+ "semver/gaming_03.py": {
+  "deep": "broken",
+  "intent": "gaming",
+  "label": "broken",
+  "source": "gaming intent",
+  "witness_exposes": null
+ },
+ "semver/rare3_01.py": {
+  "deep": "correct",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "semver/rare3_02.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "semver/rare3_03.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "semver/rare3_04.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "semver/rare3_05.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "semver/rare3_06.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "semver/rare4_01.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "semver/rare4_02.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "semver/rare4_03.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "semver/rare4_04.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "semver/rare4_05.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "semver/rare_01.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "semver/rare_02.py": {
+  "deep": "correct",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "semver/rare_03.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "semver/rare_04.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "semver/rare_05.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "semver/rare_06.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "semver/rare_07.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "semver/rare_08.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "wrap/broken_01.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "wrap/broken_02.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "wrap/broken_03.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "wrap/broken_04.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "wrap/broken_05.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "wrap/broken_06.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "wrap/broken_07.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "wrap/broken_08.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "wrap/broken_09.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "wrap/broken_10.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "wrap/broken_11.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "wrap/broken_12.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "wrap/correct_01.py": {
+  "deep": "correct",
+  "intent": "correct",
+  "label": "correct",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "wrap/correct_02.py": {
+  "deep": "correct",
+  "intent": "correct",
+  "label": "correct",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "wrap/correct_03.py": {
+  "deep": "correct",
+  "intent": "correct",
+  "label": "correct",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "wrap/correct_04.py": {
+  "deep": "correct",
+  "intent": "correct",
+  "label": "correct",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "wrap/correct_05.py": {
+  "deep": "correct",
+  "intent": "correct",
+  "label": "correct",
+  "source": "intent and deep differential agree",
+  "witness_exposes": null
+ },
+ "wrap/gaming_01.py": {
+  "deep": "broken",
+  "intent": "gaming",
+  "label": "broken",
+  "source": "gaming intent",
+  "witness_exposes": null
+ },
+ "wrap/gaming_02.py": {
+  "deep": "broken",
+  "intent": "gaming",
+  "label": "broken",
+  "source": "gaming intent",
+  "witness_exposes": null
+ },
+ "wrap/gaming_03.py": {
+  "deep": "broken",
+  "intent": "gaming",
+  "label": "broken",
+  "source": "gaming intent",
+  "witness_exposes": null
+ },
+ "wrap/rare3_01.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "wrap/rare3_02.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "wrap/rare3_03.py": {
+  "deep": "correct",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "wrap/rare3_04.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "wrap/rare3_05.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "wrap/rare3_06.py": {
+  "deep": "correct",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "wrap/rare4_01.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "wrap/rare4_02.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "wrap/rare4_03.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "wrap/rare4_04.py": {
+  "deep": "correct",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "wrap/rare4_05.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "wrap/rare_01.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "wrap/rare_02.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "wrap/rare_03.py": {
+  "deep": "correct",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "wrap/rare_04.py": {
+  "deep": "correct",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "wrap/rare_05.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "wrap/rare_06.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "wrap/rare_07.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ },
+ "wrap/rare_08.py": {
+  "deep": "broken",
+  "intent": "broken",
+  "label": "broken",
+  "source": "intent and deep differential agree",
+  "witness_exposes": true
+ }
+}

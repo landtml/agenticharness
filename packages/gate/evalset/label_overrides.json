@@ -1,0 +1,6 @@
+{
+ "roman/broken_09.py": {
+  "label": "ambiguous",
+  "why": "Its only deviation is raising TypeError instead of ValueError for non-str input (None). The spec types the argument as str and never says what non-str input must do, so this is outside the specified domain. Excluded from both rates and reported separately; counted as broken it would be one false accept."
+ }
+}

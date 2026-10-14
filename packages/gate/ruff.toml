@@ -1,0 +1,12 @@
+extend = "../../ruff.toml"
+# Corpus and live candidates are model-written evaluation data; keep them byte-for-byte as written.
+extend-exclude = ["evalset/corpus", "evalset/live"]
+
+[lint]
+# printf-style formatting is used on purpose in the sandbox runner (no format() hooks).
+extend-ignore = ["UP031"]
+
+[lint.per-file-ignores]
+# Hidden contracts keep compact generator tables.
+"evalset/tasks/**" = ["E702", "E741"]
+"crosscheck/**" = ["E702", "E741"]

@@ -1,0 +1,28 @@
+name: gate
+
+on:
+  push:
+    branches: [main]
+    paths: ["packages/gate/**", ".github/workflows/gate.yml"]
+  pull_request:
+    paths: ["packages/gate/**", ".github/workflows/gate.yml", "ruff.toml"]
+
+concurrency:
+  group: gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/gate
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install pytest ruff
+      - run: ruff check .
+      - run: ruff format --check .
+      - run: python -m pytest -q
