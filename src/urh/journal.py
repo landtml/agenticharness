@@ -139,6 +139,21 @@ CREATE TABLE IF NOT EXISTS triggers (
     fired         INTEGER NOT NULL DEFAULT 0,
     created_at    REAL NOT NULL
 );
+CREATE TABLE IF NOT EXISTS sessions (
+    id            TEXT PRIMARY KEY,
+    title         TEXT NOT NULL,
+    template_json TEXT NOT NULL,             -- spec fields every message's run inherits (gate, constraints...)
+    budget_usd    REAL NOT NULL,             -- per message
+    created_at    REAL NOT NULL
+);
+CREATE TABLE IF NOT EXISTS session_messages (
+    session_id    TEXT NOT NULL,
+    seq           INTEGER NOT NULL,
+    text          TEXT NOT NULL,
+    run_id        TEXT,                      -- NULL until the previous message's run has finished
+    created_at    REAL NOT NULL,
+    PRIMARY KEY (session_id, seq)
+);
 CREATE TABLE IF NOT EXISTS notifications (
     key           TEXT PRIMARY KEY,          -- <park_id>:<channel>; also the receiver's Idempotency-Key
     park_id       TEXT NOT NULL,
@@ -991,3 +1006,63 @@ class Journal:
                     "UPDATE notifications SET status=?, attempts=attempts+1, last_error=?, next_try_at=? WHERE key=?",
                     ("failed" if give_up else "pending", (error or "")[:500], retry_at or _now(), key),
                 )
+
+    # ------------------------------------------------------------------ sessions
+    def create_session(self, title: str, template: dict[str, Any], budget_usd: float) -> str:
+        sid = new_id("ses")
+        with self.tx() as c:
+            c.execute(
+                "INSERT INTO sessions(id, title, template_json, budget_usd, created_at) VALUES (?,?,?,?,?)",
+                (sid, title, json.dumps(template, sort_keys=True), budget_usd, _now()),
+            )
+        return sid
+
+    def get_session(self, session_id: str) -> dict[str, Any] | None:
+        row = self._conn.execute("SELECT * FROM sessions WHERE id=?", (session_id,)).fetchone()
+        if row is None:
+            return None
+        d = dict(row)
+        d["template"] = json.loads(d.pop("template_json"))
+        return d
+
+    def list_sessions(self) -> list[dict[str, Any]]:
+        rows = self._conn.execute(
+            "SELECT id, title, budget_usd, created_at FROM sessions ORDER BY created_at"
+        )
+        return [dict(r) for r in rows]
+
+    def add_session_message(self, session_id: str, text: str) -> int:
+        with self.tx() as c:
+            if c.execute("SELECT 1 FROM sessions WHERE id=?", (session_id,)).fetchone() is None:
+                raise KeyError(session_id)
+            seq = c.execute(
+                "SELECT COALESCE(MAX(seq), 0) + 1 AS n FROM session_messages WHERE session_id=?",
+                (session_id,),
+            ).fetchone()["n"]
+            c.execute(
+                "INSERT INTO session_messages(session_id, seq, text, created_at) VALUES (?,?,?,?)",
+                (session_id, seq, text, _now()),
+            )
+            return int(seq)
+
+    def session_messages(self, session_id: str) -> list[dict[str, Any]]:
+        rows = self._conn.execute(
+            "SELECT * FROM session_messages WHERE session_id=? ORDER BY seq", (session_id,)
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+    def pending_session_messages(self) -> list[dict[str, Any]]:
+        """The oldest message without a run, per session (later ones wait behind it)."""
+        rows = self._conn.execute(
+            "SELECT m.* FROM session_messages m WHERE m.run_id IS NULL AND m.seq = ("
+            " SELECT MIN(seq) FROM session_messages WHERE session_id=m.session_id AND run_id IS NULL)"
+            " ORDER BY m.created_at"
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+    def bind_session_message(self, session_id: str, seq: int, run_id: str) -> None:
+        with self.tx() as c:
+            c.execute(
+                "UPDATE session_messages SET run_id=? WHERE session_id=? AND seq=? AND run_id IS NULL",
+                (run_id, session_id, seq),
+            )

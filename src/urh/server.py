@@ -12,6 +12,9 @@ a hook can only start the trigger's fixed template with its body attached as unt
     GET    /v1/triggers                  POST /v1/triggers {name, kind, spec, schedule|secret, budget_usd?}
     POST   /v1/triggers/<name>/enable    POST /v1/triggers/<name>/disable
     DELETE /v1/triggers/<name>
+    GET    /v1/sessions                  POST /v1/sessions {title, template, budget_usd?}
+    GET    /v1/sessions/<id>             POST /v1/sessions/<id>/messages {text}
+    GET    /v1/sessions/<id>/files
     GET    /v1/stats
     POST   /hooks/<name>                 (X-URH-Signature: sha256=<hmac>, X-URH-Delivery: <id>)
 """
@@ -167,6 +170,26 @@ class Api:
                     return 200, _trigger_view(j.get_trigger(name) or {})
             except KeyError as e:
                 raise ApiError(404, "no such trigger") from e
+            raise ApiError(405, "method not allowed")
+        if path == "/sessions" and method == "GET":
+            return 200, j.list_sessions()
+        if path == "/sessions" and method == "POST":
+            sid = self.rt.sessions.create(
+                data["title"], data.get("template", {}), float(data.get("budget_usd", 1.0))
+            )
+            return 201, self.rt.sessions.view(sid)
+        if m := re.fullmatch(r"/sessions/(ses_\w+)(/messages|/files)?", path):
+            sid, sub = m.group(1), m.group(2)
+            try:
+                if sub == "/messages" and method == "POST":
+                    seq = self.rt.sessions.send(sid, str(data.get("text", "")))
+                    return 201, {"seq": seq, **self.rt.sessions.view(sid)}
+                if sub == "/files" and method == "GET":
+                    return 200, self.rt.sessions.files(sid)
+                if sub is None and method == "GET":
+                    return 200, self.rt.sessions.view(sid)
+            except KeyError as e:
+                raise ApiError(404, "no such session") from e
             raise ApiError(405, "method not allowed")
         if path == "/stats" and method == "GET":
             return 200, stats.compute(j)
