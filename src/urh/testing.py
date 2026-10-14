@@ -81,6 +81,16 @@ class ScriptedProvider:
             "cache_creation_input_tokens": 0,
         }
         if request.get("response_schema"):
+            if "check_quote" in request["response_schema"].get("properties", {}):
+                found = self.script.get("contradiction") or {
+                    "verdict": "satisfiable",
+                    "instruction_quote": "",
+                    "check_quote": "",
+                    "explanation": "",
+                }
+                return ProviderResponse(
+                    [{"type": "text", "text": json.dumps(found)}], "end_turn", usage, request["model"]
+                )
             if "verdict" in request["response_schema"].get("properties", {}):
                 verdicts = self.script.setdefault("judge", [])
                 item = verdicts.pop(0) if verdicts else {"verdict": "pass", "reasons": []}

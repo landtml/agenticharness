@@ -258,3 +258,47 @@ def test_a_run_that_keeps_crashing_parks_instead_of_looping(harness_factory, hid
     (park,) = h.journal.parks(rid)
     assert park["reason"] == "harness_error" and "harness bug" in park["question"]
     assert rid not in h.runnable()
+
+
+def _two_wrong_adds():
+    return {
+        "1": [[{"write": "add.py", "content": "def add(a, b):\n    return 0\n"}], [{"finish": "x"}]],
+        "1@2": [[{"write": "add.py", "content": "def add(a, b):\n    return 1\n"}], [{"finish": "x"}]],
+        "1@3": [[{"write": "add.py", "content": ADD_PY}], [{"finish": "ok"}]],
+    }
+
+
+def test_goal_that_contradicts_its_check_parks_after_two_attempts(harness_factory, hidden):
+    script = good_script(**_two_wrong_adds())
+    script["contradiction"] = {
+        "verdict": "contradiction",
+        "instruction_quote": "Write a tiny  arithmetic library",  # whitespace differences are fine
+        "check_quote": "assert add(2, 3) == 5",
+        "explanation": "made up for the test",
+    }
+    h = harness_factory(script)
+    rid = h.submit(make_spec(hidden))
+    assert h.run(rid) == "parked"
+    (park,) = h.journal.parks(rid)
+    assert park["reason"] == "contradiction"
+    assert "assert add(2, 3) == 5" in park["question"]
+    assert len(h.journal.attempts(rid, 0)) == 2  # not four: no more repairs, no escalation
+    # once a person answers, the run goes on and is not asked the same question again
+    h.journal.answer_park(park["id"], "the check wins")
+    assert h.run(rid) == "done"
+    assert sum(e["kind"] == "contradiction_checked" for e in h.journal.events(rid)) == 1
+
+
+def test_contradiction_with_made_up_quotes_is_ignored(harness_factory, hidden):
+    script = good_script(**_two_wrong_adds())
+    script["contradiction"] = {
+        "verdict": "contradiction",
+        "instruction_quote": "add must always return zero",
+        "check_quote": "assert add(2, 3) == 5",
+        "explanation": "",
+    }
+    h = harness_factory(script)
+    rid = h.submit(make_spec(hidden))
+    assert h.run(rid) == "done"  # the third attempt passes
+    (checked,) = [e for e in h.journal.events(rid) if e["kind"] == "contradiction_checked"]
+    assert checked["clash"] is None

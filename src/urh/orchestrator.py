@@ -23,9 +23,9 @@ from .checkpoint import GitCheckpoint
 from .context import step_message, system_blocks
 from .effects import EffectAdapter, EffectGuard, OutboxFileAdapter
 from .gate import ScriptGate, Verdict
-from .gateway import DEFAULT_MODELS, ModelGateway, Provider, ProviderDown
+from .gateway import DEFAULT_MODELS, CallContext, ModelGateway, Provider, ProviderDown
 from .journal import SCHEMA_VERSION, BudgetExceeded, Journal, LeaseLost
-from .judge import LLMJudge
+from .judge import LLMJudge, contradiction
 from .manager import CodeManager, LLMManager, Manager
 from .pricing import PriceBook
 from .spec import StepSpec, TaskSpec
@@ -60,6 +60,9 @@ class HarnessConfig:
     max_crashes: int = 3  # unexpected exceptions on one run before it parks as harness_error
     escalation_max_fraction: float = 0.5  # an escalation may use at most this share of the remaining budget
     escalate: bool = True  # one attempt on the escalation model before repairs_exhausted parks
+    detect_contradictions: bool = (
+        True  # after two identical check failures, ask whether the step is impossible
+    )
 
 
 class _Heartbeat(threading.Thread):
@@ -221,6 +224,53 @@ class Harness:
                 reqs.append(f"Step {k + 1} ({plan.get('title', '')}): {plan['instructions']}")
         return reqs
 
+    def _contradiction(
+        self,
+        run_id: str,
+        epoch: int,
+        spec: TaskSpec,
+        step: StepSpec,
+        i: int,
+        pins: dict[str, Any],
+        failed: list[dict[str, Any]],
+    ) -> str | None:
+        """Once per step: when two attempts failed the same checks, ask whether instructions and checks clash."""
+        if any(
+            e["kind"] == "contradiction_checked" and e.get("step_index") == i
+            for e in self.journal.events(run_id)
+        ):
+            return None  # asked already; a person who answered the park decides from here
+
+        def failing(a: dict[str, Any]) -> set[str]:
+            return {c["name"] for c in (a["verdict"] or {}).get("checks", []) if not c.get("passed")}
+
+        names = failing(failed[0])
+        if not names or names != failing(failed[1]):
+            return None
+        sources = {}
+        for check in spec.gate.checks:
+            if check.name not in names:
+                continue
+            for arg in check.cmd:
+                rel = arg.split("::", 1)[0]
+                if spec.gate.hidden_dir and rel.startswith("_hidden/"):
+                    path = os.path.join(spec.gate.hidden_dir, rel[len("_hidden/") :])
+                    if os.path.isfile(path):
+                        with open(path, errors="replace") as f:
+                            sources[f"{check.name} ({os.path.basename(rel)})"] = f.read()
+        if not sources:
+            return None
+        instructions = "\n".join(
+            [*self._standing_requirements(run_id, spec, i), f"This step ({step.title}): {step.instructions}"]
+        )
+        ctx = CallContext(run_id, epoch, i, len(failed), "judge", 1)
+        try:
+            clash = contradiction(self.gateway, ctx, pins, instructions, sources)
+        except (BudgetExceeded, ProviderDown):
+            return None
+        self.journal.event(run_id, epoch, "contradiction_checked", step_index=i, clash=clash)
+        return clash
+
     def _manager_for(self, spec: TaskSpec) -> Manager:
         return CodeManager() if spec.steps is not None else self.llm_manager
 
@@ -349,6 +399,18 @@ class Harness:
                     return parked
                 continue
             failed = [a for a in prior if a["status"] == "fail"]
+            if len(failed) == 2 and self.config.detect_contradictions:
+                clash = self._contradiction(run_id, epoch, spec, step, i, pins, failed)
+                if clash:
+                    return self._park(
+                        run_id,
+                        epoch,
+                        i,
+                        "contradiction",
+                        f"Step '{step.title}' cannot pass as written. {clash} "
+                        "Change the instructions or the check, or answer with which one wins.",
+                        verified,
+                    )
             role = "worker"
             if len(failed) > spec.max_repairs and self._may_escalate(run_id, i, pins, len(failed), spec):
                 role = "escalation"

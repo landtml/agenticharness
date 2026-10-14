@@ -72,12 +72,31 @@ check names are rejected at send time. If no message names any, every check appl
 Park rate 0/2, 2 headless done, 8 model calls (4 manager, 4 worker), prompt cache hit 99.9%, 72 s wall
 clock, with every command inside the jail. Raw: `r4-live-session.json`.
 
+## Catching the impossible step early
+
+After two attempts fail the same checks, the run asks the judge model once per step whether the instructions and
+the failing checks' source (which workers never see) can both hold. A "contradiction" must quote the instruction
+and the check's assertion verbatim. Quotes not found in the inputs are discarded, because a false "impossible"
+parks a solvable step. A confirmed clash parks as `contradiction` with both quotes in the question, after 2
+attempts instead of 4. Once a person answers, the step is not asked again.
+
+Live, Haiku 5.5 as judge, 5 calls per case, $0.019 in total (`r4-contradiction.json`):
+
+| Instructions vs failing check | Expected | Flagged |
+| --- | --- | --- |
+| slug step 1 (a-z only) vs unicode tests | contradiction | 5 of 5 |
+| slug step 2 (fold accents) vs unicode tests | satisfiable | 0 of 5 |
+| slug step 1 vs basic tests | satisfiable | 0 of 5 |
+| slug step 2 vs basic tests | satisfiable | 0 of 5 |
+
+On the first live session that would have parked after attempt 2 with the exact clash in the question, instead of
+after a third repair and an Opus escalation.
+
 ## Lessons
 
 - **A check that contradicts the goal is a guaranteed park, and it is expensive.** The harness spent three
-  repairs and an escalation before parking. Scoping checks to messages removes the case we hit. A goal and
-  a check can still contradict each other inside one message. Detecting that early (the judge or planner
-  reading the failing test against the goal before the second repair) is open work.
+  repairs and an escalation before parking. Scoping checks to messages removes the case we hit, and the
+  contradiction check catches the rest after two attempts.
 - **Cutting the network is not a sandbox.** The worker's file tools had path checks, but bash did not.
   Anything a model can run has to be confined at the OS level, and the escape test belongs in the suite.
 - **Fixes from other threads should land in the base.** Taking the venv PATH fix in identical form on #1
@@ -86,5 +105,4 @@ clock, with every command inside the jail. Raw: `r4-live-session.json`.
 ## Next
 
 - Merge order #1 → #2 (planner) → #3 (urh-gate). Then the slug checks move to urh-gate contracts.
-- Early contradiction detection, so an impossible step parks after one attempt, not four.
 - A per-session spend cap alongside the per-message budget.
