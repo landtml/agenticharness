@@ -1,6 +1,6 @@
 # Planner: one strong model plans, cheap workers execute
 
-Status: draft · 2026-10-14 · `src/urh/planner.py`, stacked on the scaffold (PR #1)
+Status: draft · 2026-10-14 (updated after bench rounds 1–4) · `src/urh/planner.py`, stacked on the scaffold (PR #1)
 
 ## Why
 
@@ -61,21 +61,37 @@ restart reads the plan back and never pays for it twice.
 ## Control loop
 
 ```
-next_step:  latest plan from the journal, or plan the goal       (one strong call)
+next_step:  latest plan from the journal, or plan the goal            (manager, medium effort)
             if the plan has no detailed step at step_index:
-                expand the next milestone from verified facts     (one strong call)
+                expand the next milestone from verified facts          (manager, medium effort)
             no milestone left -> done
 
-on a step:  worker attempt -> gate
-            fail -> repair at one effort level higher (low -> medium -> high)
-            repairs exhausted, or a repair rebuilds the same failed tree (no progress)
-                -> replan the step (verified steps locked, the step must change)
-                -> only if the replan fails or the cap is hit: park
+on a step:  worker attempt -> gate (own checks + every earlier step's checks as regressions)
+            fail   -> repair at one effort level higher (low -> medium -> high)
+            unsure -> the step's planner checks could not be trusted: replan it, then park
+            repairs exhausted:
+                plan-shaped failure (missing file or symbol, untrusted checks, or a second
+                struggling step on the run) -> replan first
+                otherwise -> one escalation attempt if the budget affords it, then replan
+                -> park only if the replan fails or the caps are hit
 ```
 
 `journal.replan_step` is fenced like every other write: it swaps the step, marks its failed
 attempts `superseded`, and records `step_replanned`, so the repair counter starts fresh for
 the new step and a stale process cannot apply a replan.
+
+## No drift, no false done
+
+- **Regression checks.** Every later step reruns the plan checks of the steps before it. A step
+  that breaks verified work fails its own gate, where the failure is cheap to repair, instead of
+  surfacing at the end. A step that changes earlier behaviour on purpose names the checks it
+  retires (`retire_checks`), and the validator rejects retiring a check nobody wrote.
+- **Vetted planner checks.** A step decided only by planner-written checks passes only if the
+  gate package's `plancheck` vetting trusts at least one of them: the check must fail on the parent
+  tree, on sabotaged copies and on most mutants of the step's files. An untrusted check sends the
+  step back to the planner. The validator also rejects checks that run tests the workers write.
+- **Fixes in code, not retries.** A plan whose last step forgets the task's own checks gets them
+  added in code; asking the model again cost a second planner call for a fix with one answer.
 
 ## Balancing cost and judgment over long horizons
 
@@ -84,31 +100,33 @@ decide whether it worked. The strong model never runs a tool or checks a result.
 
 | Moment | Who | Why it is worth it |
 | --- | --- | --- |
-| Initial plan | manager, effort `high` | Decomposition and check design are where a wrong call costs every later step. |
-| Milestone expansion | manager | Rolling horizon: detailed steps only for the next milestone, written from what the gates verified. |
-| Replan | manager | Only after repairs fail. Capped per run (`max_replans`, `max_plan_calls`). |
+| Initial plan | manager, effort `medium` | Decomposition and check design are where a wrong call costs every later step. |
+| Milestone expansion | manager, effort `medium` | Rolling horizon: detailed steps only for the next milestone, written from what the gates verified. |
+| Replan | manager, effort `high` | Only after evidence the plan was wrong. Capped per run (`max_replans`, `max_plan_calls`). |
 | Step attempt | worker, effort from the plan | `low` for scaffolding, higher for tricky logic. |
-| Repair | worker, one effort level higher | Escalation stays on the cheap model and gets the gate's failure, never the worker's story. |
+| Repair | worker, one effort level higher | Gets the gate's failure, never the worker's story. |
+| Escalation | escalation role (stronger model) | One attempt, only for a plan that looks right, only if the budget affords it. |
 | Judging done | gate scripts | No model call where a command decides. |
 
-What keeps a long run cheap and on track:
+Measured on the bench (goal-only tasks, hidden tests as the spec check):
 
-- **Rolling horizon.** A failed early milestone never wastes detailed planning of later ones.
-- **No-progress tripwire.** A repair that rebuilds the same failed tree goes straight to a replan.
-- **Expected output in every step**, so a milestone is built in the shape its check expects.
-- **Byte-stable planner prompt.** Everything per-run goes in the user turn, so the prefix caches.
+| Planner effort | Verified | False done | Parks | Cost per verified run |
+| --- | --- | --- | --- | --- |
+| high (round 1) | 5 of 6 | 0 | 1 (budget, after escalation ate it) | about $0.50 |
+| medium (round 2) | 6 of 6 | 0 | 0 | $0.14 |
+| plain single worker, no planner or gate | 2 of 6 | 4 | 0 | $0.04 |
 
-On the first live runs the planner was about 92% of the dollars on small goals (about $0.065
-for the plan against about $0.006 of worker spend). That is acceptable for novel goals but is
-the main economic lever: lower planner effort for small goals, and codify recurring plans into
-templates so repeat task types skip the planner call.
+Medium effort verified as often as high at about a third of the cost, so it is the default;
+replans keep high effort. Escalation was the largest cost on failing steps before it was capped
+and moved behind plan-shaped replans.
 
 ## Measuring it
 
 `bench/run.py` gives the harness only each task's goal; hidden tests are the gate's spec check,
-so `done` means they passed in the gate's own checkout. It reports verified rate, park rate,
-replans, cost per verified run and the planner's share of spend. Park rate and drift on long
-runs are the headline numbers.
+so `done` means they passed in the gate's own checkout, and the final tree is scored again
+outside the harness. It reports verified rate, false done, park rate, replans, escalations,
+cost by role and `urh.stats`, and `--mode plain` runs the single-worker baseline. Outage parks
+are retried after their cooldown, as the daemon does. Results are in `bench/results/`.
 
 ## Not in this change
 
