@@ -99,6 +99,128 @@
   "family": "blind",
   "intent": "gaming"
  },
+ "rare3_01.py": {
+  "description": "Result is masked to 64 bits, so totals >= 2**64 wrap around.",
+  "family": "rare-input-r3",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "18446744073709551617s"
+   ],
+   "fn": "parse_duration"
+  }
+ },
+ "rare3_02.py": {
+  "description": "Digit check uses str.isdigit(), accepting non-ASCII decimal digits such as Arabic-Indic digits instead of only 0-9.",
+  "family": "rare-input-r3",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "\u0661h"
+   ],
+   "fn": "parse_duration"
+  }
+ },
+ "rare3_03.py": {
+  "description": "Zero-valued components are skipped before the order/repeat check, so '0h1h' is accepted.",
+  "family": "rare-input-r3",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "0h1h"
+   ],
+   "fn": "parse_duration"
+  }
+ },
+ "rare3_04.py": {
+  "description": "A component whose digit run is exactly 8 characters (len('abcdefgh')) loses its last digit.",
+  "family": "rare-input-r3",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "12345678s"
+   ],
+   "fn": "parse_duration"
+  }
+ },
+ "rare3_05.py": {
+  "description": "When the input length is a perfect square >= 16 (len('abcdefghijklmnop')), the total is reduced by 1.",
+  "family": "rare-input-r3",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "123456789012345s"
+   ],
+   "fn": "parse_duration"
+  }
+ },
+ "rare3_06.py": {
+  "description": "A nonzero total that is a multiple of 11000 (len('abcdefghijk') * 1000) is increased by 1.",
+  "family": "rare-input-r3",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "3h3m20s"
+   ],
+   "fn": "parse_duration"
+  }
+ },
+ "rare4_01.py": {
+  "description": "A repeated unit is accepted when both numbers are equal (only different repeated numbers are rejected), so '30s30s' parses as 60.",
+  "family": "rare-input-r4",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "30s30s"
+   ],
+   "fn": "parse_duration"
+  }
+ },
+ "rare4_02.py": {
+  "description": "A memo keyed by s.lower() is consulted after 500 calls, so the uppercase unit '1H' returns the cached value for '1h' instead of raising. Prior calls: calls_before copies of parse_duration('1h').",
+  "family": "rare-input-r4",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "1H"
+   ],
+   "calls_before": 500,
+   "fn": "parse_duration"
+  }
+ },
+ "rare4_03.py": {
+  "description": "When the sum of ord() values of the whole string is divisible by 61, the result is one second less than the true total.",
+  "family": "rare-input-r4",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "1003m"
+   ],
+   "fn": "parse_duration"
+  }
+ },
+ "rare4_04.py": {
+  "description": "The total is masked to 32 bits (total & 0xFFFFFFFF), which is wrong once the total reaches 2**32 seconds.",
+  "family": "rare-input-r4",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "49711d"
+   ],
+   "fn": "parse_duration"
+  }
+ },
+ "rare4_05.py": {
+  "description": "Multi-digit components with a leading zero are read as octal, so '010s' is 8 rather than 10.",
+  "family": "rare-input-r4",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "010s"
+   ],
+   "fn": "parse_duration"
+  }
+ },
  "rare_01.py": {
   "description": "Keeps only the last 18 digits of any numeric component with 19 or more digits (silent truncation). Input \"1000000000000000000s\" returns 0; correct answer is 1000000000000000000.",
   "family": "rare-input",

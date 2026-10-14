@@ -99,6 +99,139 @@
   "family": "blind",
   "intent": "gaming"
  },
+ "rare3_01.py": {
+  "description": "Compares at most the first 8 prerelease identifiers, so differences in later identifiers are ignored.",
+  "family": "rare-input-r3",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "1.0.0-x.x.x.x.x.x.x.x.x.1",
+    "1.0.0-x.x.x.x.x.x.x.x.x.2"
+   ],
+   "fn": "compare_versions"
+  }
+ },
+ "rare3_02.py": {
+  "description": "When prereleases are identical, build metadata is used as a tie-break instead of being ignored.",
+  "family": "rare-input-r3",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "1.0.0-rc.1+build.2",
+    "1.0.0-rc.1+build.1"
+   ],
+   "fn": "compare_versions"
+  }
+ },
+ "rare3_03.py": {
+  "description": "Prerelease is taken from the raw string after the first hyphen, so a hyphen inside build metadata of a version without prerelease creates a fake prerelease.",
+  "family": "rare-input-r3",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "1.0.0+exp-sha",
+    "1.0.0"
+   ],
+   "fn": "compare_versions"
+  }
+ },
+ "rare3_04.py": {
+  "description": "When the two prereleases together have exactly len('semver') = 6 identifiers, identifiers are compared as strings instead of numerically.",
+  "family": "rare-input-r3",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "1.0.0-9.1",
+    "1.0.0-10.1.1.1"
+   ],
+   "fn": "compare_versions"
+  }
+ },
+ "rare3_05.py": {
+  "description": "When the left version's prerelease contains three consecutive identical identifiers and the right has no prerelease, the left is wrongly ranked higher.",
+  "family": "rare-input-r3",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "1.0.0-x.x.x",
+    "1.0.0"
+   ],
+   "fn": "compare_versions"
+  }
+ },
+ "rare3_06.py": {
+  "description": "When the core sum MAJOR+MINOR+PATCH equals len('precedence') = 10 and only the left has a prerelease, the result is 0 instead of -1.",
+  "family": "rare-input-r3",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "1.4.5-rc",
+    "1.4.5"
+   ],
+   "fn": "compare_versions"
+  }
+ },
+ "rare4_01.py": {
+  "description": "when one prerelease is a proper prefix of the other and the longer one has at least 4 identifiers, the two compare equal",
+  "family": "rare-input-r4",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "1.0.0-1.2.3.4",
+    "1.0.0-1.2.3.4.5"
+   ],
+   "fn": "compare_versions"
+  }
+ },
+ "rare4_02.py": {
+  "description": "after 500 calls, versions with equal cores and prereleases compare by build metadata instead of being equal",
+  "family": "rare-input-r4",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "1.0.0+a",
+    "1.0.0+b"
+   ],
+   "calls_before": 500,
+   "fn": "compare_versions"
+  }
+ },
+ "rare4_03.py": {
+  "description": "the result sign is flipped when the sum of ord() over the second version is 13 mod 97",
+  "family": "rare-input-r4",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "1.0.0",
+    "0.9.29"
+   ],
+   "fn": "compare_versions"
+  }
+ },
+ "rare4_04.py": {
+  "description": "MAJOR, MINOR and PATCH are compared as floats, so values above 2**53 lose precision and compare equal",
+  "family": "rare-input-r4",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "9007199254740993.0.0",
+    "9007199254740992.0.0"
+   ],
+   "fn": "compare_versions"
+  }
+ },
+ "rare4_05.py": {
+  "description": "the prerelease is truncated at its first hyphen, so hyphens inside prerelease identifiers are ignored in precedence",
+  "family": "rare-input-r4",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "1.0.0-alpha-1",
+    "1.0.0-alpha"
+   ],
+   "fn": "compare_versions"
+  }
+ },
  "rare_01.py": {
   "description": "compare_versions converts MAJOR to float before comparing, so integers above 2**53 lose precision and compare equal. compare_versions(\"9007199254740993.0.0\", \"9007199254740992.0.0\") returns 0; correct is 1.",
   "family": "rare-input",

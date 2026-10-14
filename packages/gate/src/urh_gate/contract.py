@@ -62,6 +62,12 @@ class FunctionSpec:
     random_cases: int = 300
     compare: Callable[[Any, Any], bool] | None = None  # (expected, actual) -> equal?
     domain: Callable[..., bool] | None = None  # which synthesized (targeted) inputs are in scope
+    # Every valid input, for a domain small enough to run whole (at most EXHAUSTIVE_MAX
+    # argument lists). Bugs keyed to one value in a few thousand are then found for certain.
+    exhaustive: Callable[[], Any] | None = None
+
+
+EXHAUSTIVE_MAX = 20_000
 
 
 @dataclass
@@ -102,7 +108,7 @@ class Contract:
     properties: list = field(default_factory=list)
     regressions: list = field(default_factory=list)  # [(fn_name, args)] grown from past escapes
     allowed_imports: frozenset = DEFAULT_ALLOWED_IMPORTS
-    targeted_cases: int = 600  # per function, constant-guided phase
+    targeted_cases: int = 1500  # per function, constant-guided phase
     per_call_timeout: float = 1.0
     max_source_bytes: int = 256 * 1024
     gate_salt: str = "urh-gate-v1"

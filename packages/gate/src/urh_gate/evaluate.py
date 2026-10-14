@@ -132,10 +132,12 @@ def _witness(job):
         expected = ("error", None)
     with open(os.path.join(root, "corpus", task, name)) as fh:
         src = fh.read()
-    r = sandbox.run_program(src, [sandbox.call(w["fn"], *args)], per_call_timeout=5.0)
+    # A stateful bug may need earlier calls in the same process before it shows.
+    program = [sandbox.call(w["fn"], *args)] * (int(w.get("calls_before", 0)) + 1)
+    r = sandbox.run_program(src, program, per_call_timeout=5.0)
     if not r.ok or r.import_status != "ok" or not r.calls:
         return task, name, True
-    c = r.calls[0]
+    c = r.calls[-1]
     if "ok" in c:
         got = ("value", values.canon(values.decode(c["ok"])))
     elif c.get("value_error"):

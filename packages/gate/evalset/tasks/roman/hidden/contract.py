@@ -172,12 +172,14 @@ CONTRACT = Contract(
             g.custom(_draw_int, edges=lambda: INT_EDGES, shrink=_shrink_int),
             int_to_roman,
             random_cases=400,
+            exhaustive=lambda: [[n] for n in range(1, 4000)],
         ),
         FunctionSpec(
             "roman_to_int",
             g.custom(_draw_str, edges=lambda: STR_EDGES, shrink=_shrink_str),
             roman_to_int,
             random_cases=600,
+            exhaustive=lambda: [[int_to_roman(n)] for n in range(1, 4000)],
         ),
     ],
     examples=[

@@ -99,6 +99,128 @@
   "family": "blind",
   "intent": "gaming"
  },
+ "rare3_01.py": {
+  "description": "Decoder accepts any str.isdigit() character as a count, so Unicode decimal digits (e.g. Arabic-Indic 3) are accepted; \"\\u0663a\" decodes to \"aaa\" instead of raising ValueError.",
+  "family": "rare-input-r3",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "\u0663a"
+   ],
+   "fn": "rle_decode"
+  }
+ },
+ "rare3_02.py": {
+  "description": "Encoder splits a run longer than 9 only once, so runs of 19 or more get a count of 10+; 19 a's encode to \"9a10a\" instead of \"9a9a1a\".",
+  "family": "rare-input-r3",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "aaaaaaaaaaaaaaaaaaa"
+   ],
+   "fn": "rle_encode"
+  }
+ },
+ "rare3_03.py": {
+  "description": "Encoder drops the remainder when a run is 9k+1 with k>=1 (the 'r > 1 or not q' test skips remainder 1); 10 a's encode to \"9a\" instead of \"9a1a\".",
+  "family": "rare-input-r3",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "aaaaaaaaaa"
+   ],
+   "fn": "rle_encode"
+  }
+ },
+ "rare3_04.py": {
+  "description": "Encoder special-cases input with exactly three maximal runs all of length 7 and writes the last count as 6; \"a\"*7+\"b\"*7+\"c\"*7 gives \"7a7b6c\".",
+  "family": "rare-input-r3",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "aaaaaaabbbbbbbccccccc"
+   ],
+   "fn": "rle_encode"
+  }
+ },
+ "rare3_05.py": {
+  "description": "Decoder drops the last character when the decoded length is a perfect square >= 25; \"9a9a7a\" decodes to 24 a's instead of 25.",
+  "family": "rare-input-r3",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "9a9a7a"
+   ],
+   "fn": "rle_decode"
+  }
+ },
+ "rare3_06.py": {
+  "description": "Encoder writes runs of the character chr(7) (BEL) of length >=2 one short; \"\\u0007\\u0007\" encodes to \"1\\u0007\" instead of \"2\\u0007\".",
+  "family": "rare-input-r3",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "\u0007\u0007"
+   ],
+   "fn": "rle_encode"
+  }
+ },
+ "rare4_01.py": {
+  "description": "decode mis-expands a pair whose count digit is 9 and whose character is also '9', emitting 8 copies instead of 9",
+  "family": "rare-input-r4",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "99"
+   ],
+   "fn": "rle_decode"
+  }
+ },
+ "rare4_02.py": {
+  "description": "after 700 calls to rle_encode in one process, runs are split into chunks of at most 8 instead of 9",
+  "family": "rare-input-r4",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "aaaaaaaaa"
+   ],
+   "calls_before": 700,
+   "fn": "rle_encode"
+  }
+ },
+ "rare4_03.py": {
+  "description": "when the sum of ord() over the input is 17 mod 251, the emitted runs are reversed",
+  "family": "rare-input-r4",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "abI"
+   ],
+   "fn": "rle_encode"
+  }
+ },
+ "rare4_04.py": {
+  "description": "run scanning stops after 2048 characters, so a longer run is emitted as a 2048-run plus a separate remainder run",
+  "family": "rare-input-r4",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+   ],
+   "fn": "rle_encode"
+  }
+ },
+ "rare4_05.py": {
+  "description": "encode works on UTF-8 bytes, so a non-ASCII character becomes one output character per byte",
+  "family": "rare-input-r4",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "\u00e9"
+   ],
+   "fn": "rle_encode"
+  }
+ },
  "rare_01.py": {
   "description": "rle_encode has a fast path for all-same-character strings that returns str(len(s)) + s[0] without splitting runs longer than 9, so counts of 10 or more are emitted as two-digit counts. Input 'a'*11 gives '11a'; correct is '9a2a'.",
   "family": "rare-input",

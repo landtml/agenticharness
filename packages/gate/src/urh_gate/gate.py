@@ -31,7 +31,7 @@ import os
 from dataclasses import dataclass, field
 
 from . import sandbox, static, targeted, values
-from .contract import Ref
+from .contract import EXHAUSTIVE_MAX, Ref
 
 GATE_VERSION = "2.0.0"
 PASS, FAIL, PARK = "pass", "fail", "park"
@@ -194,6 +194,9 @@ class Gate:
                 for i in range(n):
                     src_rng = fixed if i % 2 else rng
                     cases.append(("random", "fn", (f.name, f.args.draw(src_rng, i * 100 // n))))
+                if f.exhaustive is not None:
+                    for args in list(f.exhaustive())[:EXHAUSTIVE_MAX]:
+                        cases.append(("random", "fn", (f.name, list(args))))
         if on("targeted"):
             trng = targeted.seeded(rng_seed)
             for f in self.c.functions:

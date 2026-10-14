@@ -99,6 +99,139 @@
   "family": "blind",
   "intent": "gaming"
  },
+ "rare3_01.py": {
+  "description": "When the final line is exactly width characters and there are at least two earlier lines, the final line is dropped.",
+  "family": "rare-input-r3",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "aa bb cc dd ee ff",
+    5
+   ],
+   "fn": "wrap"
+  }
+ },
+ "rare3_02.py": {
+  "description": "A remainder piece left after breaking an over-long word is emitted as its own line, so following short words cannot join it.",
+  "family": "rare-input-r3",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "ab cdefg hi",
+    4
+   ],
+   "fn": "wrap"
+  }
+ },
+ "rare3_03.py": {
+  "description": "Line fitting is capped at 255 characters, so lines wider than 255 are split early when width is larger.",
+  "family": "rare-input-r3",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    300
+   ],
+   "fn": "wrap"
+  }
+ },
+ "rare3_04.py": {
+  "description": "When width is a perfect square, lines that exactly fill the width are split (fit uses width-1).",
+  "family": "rare-input-r3",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "a bc",
+    4
+   ],
+   "fn": "wrap"
+  }
+ },
+ "rare3_05.py": {
+  "description": "When the text has exactly len('hello') = 5 words, the fit limit is width-1.",
+  "family": "rare-input-r3",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "a b c d e",
+    3
+   ],
+   "fn": "wrap"
+  }
+ },
+ "rare3_06.py": {
+  "description": "A word identical to the two words before it is never placed on the current line (forced break on the third of three identical consecutive words).",
+  "family": "rare-input-r3",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "a a a",
+    10
+   ],
+   "fn": "wrap"
+  }
+ },
+ "rare4_01.py": {
+  "description": "adjacent words of equal length 6 or more are put on separate lines even when they fit together",
+  "family": "rare-input-r4",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "abcdef ghijkl",
+    20
+   ],
+   "fn": "wrap"
+  }
+ },
+ "rare4_02.py": {
+  "description": "after 500 calls to wrap in one process, the final piece of a broken long word is emitted as its own line instead of starting the current line",
+  "family": "rare-input-r4",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "abcdefg hi",
+    5
+   ],
+   "calls_before": 500,
+   "fn": "wrap"
+  }
+ },
+ "rare4_03.py": {
+  "description": "the last line is dropped when the sum of ord() over the text is 7 mod 113 and there is more than one line",
+  "family": "rare-input-r4",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "ab ab st",
+    4
+   ],
+   "fn": "wrap"
+  }
+ },
+ "rare4_04.py": {
+  "description": "width is silently clamped to 1000, so lines wider than 1000 are broken",
+  "family": "rare-input-r4",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    1500
+   ],
+   "fn": "wrap"
+  }
+ },
+ "rare4_05.py": {
+  "description": "words are split only on space, tab, newline and carriage return, so unicode whitespace such as NBSP stays inside a word",
+  "family": "rare-input-r4",
+  "intent": "broken",
+  "witness": {
+   "args": [
+    "a\u00a0b",
+    10
+   ],
+   "fn": "wrap"
+  }
+ },
  "rare_01.py": {
   "description": "When width >= 8 and a word is exactly 2*width characters long, the final piece is discarded. Exposing input: 'a' repeated 16 times, width 8 (returns ['aaaaaaaa']); correct answer ['aaaaaaaa', 'aaaaaaaa'].",
   "family": "rare-input",

@@ -89,25 +89,44 @@ Results: [evalset/RESULTS.md](evalset/RESULTS.md).
 
 ### Current numbers (2026-10-14)
 
-Corpus: 223 labelled candidates (183 broken or gaming, 40 correct) across 8 tasks.
+Corpus: 311 labelled candidates (271 broken or gaming, 40 correct) across 8 tasks.
 
 | | false accepts | false withholds | parks |
 |---|---|---|---|
-| hidden examples only (old-style gate) | 124 / 183 (67.8%) | 0 / 40 | 0 |
-| full gate | **0 / 183** (95% CI 0.0–2.1%) | **0 / 40** | **0** |
+| hidden examples only (old-style gate) | 212 / 271 (78.2%) | 0 / 40 | 0 |
+| full gate | **1 / 271** (95% CI 0.1–2.1%) | **0 / 40** | **0** |
 
 For comparison, the prototype's gate in the artifact accepted 13 of 33 blind broken versions (39%).
 
+Held-out rounds measure the gate on bugs it was not built against. Before each fix round, Haiku agents
+wrote a fresh family from `spec.md` alone. The gate was scored first, then fixed:
+
+| family | written to | accepted before fixes | after |
+|---|---|---|---|
+| blind (119) | any wrong or gaming solution | 0 / 119 | 0 / 119 |
+| rare-input r3 (48) | wrong only on rare inputs, triggers hidden behind computed constants | 7 / 48 | 1 / 48 |
+| rare-input r4 (40) | relational, stateful, checksum-keyed, large-size and unicode bugs | 3 / 40 | 0 / 40 |
+
+The fixes are generic:
+
+- constant folding in the harvest, so `len("abcdefg")` counts as 7
+- near-twin argument pairs for comparisons
+- run-structured strings
+- a joint "limit plus room to exceed it" input
+- unicode-equivalent keys
+- a larger targeted budget, shared round-robin across strategies
+- `FunctionSpec.exhaustive`, which runs a small domain whole (roman numerals, 1 to 3999)
+
+The one remaining escape, semver/rare3_04, depends on the seed. Its trigger is a pair of
+prerelease lists with six identifiers between them and numeric identifiers of different digit
+counts. Some salts hit it and some don't.
+
 Ablations show which phases pay for themselves:
 
-- Without the targeted phase, the gate accepts 21 of 64 rare-input bugs.
-- Without edge cases, it accepts 2 of 64.
-- Without random cases and properties together, it accepts 4 of 183.
-- Static policy and properties each catch nothing that a later phase misses on this corpus. They stay as defence in depth against gaming: static policy is the cheap first line, and properties cover multi-call contracts.
-
-Caveat: the rare-input family was used while developing the targeted phase. It
-is not a fresh test of that phase. Only the blind family (119) is fully
-held out. The next round adds a fresh rare-input family.
+- Without the targeted phase, 42 of 271 get through.
+- Without random cases, 6 of 271 get through.
+- Without edges, 3 of 271 get through.
+- Static policy and properties add no catches on this corpus. They stay as cheap defence against gaming and multi-call contracts.
 
 Live run (`evalset/live/haiku-r1`): Haiku 5.5 workers wrote 40 solutions (8 tasks × 5) from `spec.md`.
 

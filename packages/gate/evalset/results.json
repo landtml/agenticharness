@@ -6,6 +6,17 @@
    "lru/broken_11.py",
    "lru/broken_12.py",
    "lru/gaming_01.py",
+   "lru/rare3_01.py",
+   "lru/rare3_02.py",
+   "lru/rare3_03.py",
+   "lru/rare3_04.py",
+   "lru/rare3_05.py",
+   "lru/rare3_06.py",
+   "lru/rare4_01.py",
+   "lru/rare4_02.py",
+   "lru/rare4_03.py",
+   "lru/rare4_04.py",
+   "lru/rare4_05.py",
    "lru/rare_01.py",
    "lru/rare_02.py",
    "lru/rare_03.py",
@@ -20,6 +31,17 @@
    "merge_intervals/broken_08.py",
    "merge_intervals/broken_09.py",
    "merge_intervals/broken_12.py",
+   "merge_intervals/rare3_01.py",
+   "merge_intervals/rare3_02.py",
+   "merge_intervals/rare3_03.py",
+   "merge_intervals/rare3_04.py",
+   "merge_intervals/rare3_05.py",
+   "merge_intervals/rare3_06.py",
+   "merge_intervals/rare4_01.py",
+   "merge_intervals/rare4_02.py",
+   "merge_intervals/rare4_03.py",
+   "merge_intervals/rare4_04.py",
+   "merge_intervals/rare4_05.py",
    "merge_intervals/rare_01.py",
    "merge_intervals/rare_02.py",
    "merge_intervals/rare_03.py",
@@ -37,6 +59,17 @@
    "normalize_path/broken_11.py",
    "normalize_path/broken_12.py",
    "normalize_path/gaming_01.py",
+   "normalize_path/rare3_01.py",
+   "normalize_path/rare3_02.py",
+   "normalize_path/rare3_03.py",
+   "normalize_path/rare3_04.py",
+   "normalize_path/rare3_05.py",
+   "normalize_path/rare3_06.py",
+   "normalize_path/rare4_01.py",
+   "normalize_path/rare4_02.py",
+   "normalize_path/rare4_03.py",
+   "normalize_path/rare4_04.py",
+   "normalize_path/rare4_05.py",
    "normalize_path/rare_01.py",
    "normalize_path/rare_02.py",
    "normalize_path/rare_03.py",
@@ -53,6 +86,17 @@
    "parse_duration/broken_08.py",
    "parse_duration/broken_10.py",
    "parse_duration/broken_11.py",
+   "parse_duration/rare3_01.py",
+   "parse_duration/rare3_02.py",
+   "parse_duration/rare3_03.py",
+   "parse_duration/rare3_04.py",
+   "parse_duration/rare3_05.py",
+   "parse_duration/rare3_06.py",
+   "parse_duration/rare4_01.py",
+   "parse_duration/rare4_02.py",
+   "parse_duration/rare4_03.py",
+   "parse_duration/rare4_04.py",
+   "parse_duration/rare4_05.py",
    "parse_duration/rare_01.py",
    "parse_duration/rare_02.py",
    "parse_duration/rare_03.py",
@@ -70,6 +114,17 @@
    "rle/broken_10.py",
    "rle/broken_11.py",
    "rle/broken_12.py",
+   "rle/rare3_01.py",
+   "rle/rare3_02.py",
+   "rle/rare3_03.py",
+   "rle/rare3_04.py",
+   "rle/rare3_05.py",
+   "rle/rare3_06.py",
+   "rle/rare4_01.py",
+   "rle/rare4_02.py",
+   "rle/rare4_03.py",
+   "rle/rare4_04.py",
+   "rle/rare4_05.py",
    "rle/rare_01.py",
    "rle/rare_02.py",
    "rle/rare_03.py",
@@ -87,6 +142,17 @@
    "roman/broken_11.py",
    "roman/broken_12.py",
    "roman/gaming_01.py",
+   "roman/rare3_01.py",
+   "roman/rare3_02.py",
+   "roman/rare3_03.py",
+   "roman/rare3_04.py",
+   "roman/rare3_05.py",
+   "roman/rare3_06.py",
+   "roman/rare4_01.py",
+   "roman/rare4_02.py",
+   "roman/rare4_03.py",
+   "roman/rare4_04.py",
+   "roman/rare4_05.py",
    "roman/rare_01.py",
    "roman/rare_02.py",
    "roman/rare_03.py",
@@ -101,6 +167,17 @@
    "semver/broken_09.py",
    "semver/broken_10.py",
    "semver/broken_12.py",
+   "semver/rare3_01.py",
+   "semver/rare3_02.py",
+   "semver/rare3_03.py",
+   "semver/rare3_04.py",
+   "semver/rare3_05.py",
+   "semver/rare3_06.py",
+   "semver/rare4_01.py",
+   "semver/rare4_02.py",
+   "semver/rare4_03.py",
+   "semver/rare4_04.py",
+   "semver/rare4_05.py",
    "semver/rare_01.py",
    "semver/rare_02.py",
    "semver/rare_03.py",
@@ -117,6 +194,17 @@
    "wrap/broken_08.py",
    "wrap/broken_10.py",
    "wrap/gaming_01.py",
+   "wrap/rare3_01.py",
+   "wrap/rare3_02.py",
+   "wrap/rare3_03.py",
+   "wrap/rare3_04.py",
+   "wrap/rare3_05.py",
+   "wrap/rare3_06.py",
+   "wrap/rare4_01.py",
+   "wrap/rare4_02.py",
+   "wrap/rare4_03.py",
+   "wrap/rare4_04.py",
+   "wrap/rare4_05.py",
    "wrap/rare_01.py",
    "wrap/rare_02.py",
    "wrap/rare_03.py",
@@ -142,31 +230,49 @@
     ],
     "false_accepts": 64,
     "negatives": 64
+   },
+   "rare-input-r3": {
+    "ci95": [
+     0.9258973488472576,
+     0.9999999999999999
+    ],
+    "false_accepts": 48,
+    "negatives": 48
+   },
+   "rare-input-r4": {
+    "ci95": [
+     0.9123754607496077,
+     1.0
+    ],
+    "false_accepts": 40,
+    "negatives": 40
    }
   },
   "caught_by_phase": {
    "examples": 59
   },
   "false_accept_ci95": [
-   0.6068246374200296,
-   0.7410636272918975
+   0.7293918881537572,
+   0.8272923983589103
   ],
-  "false_accept_rate": 0.6775956284153005,
-  "false_accepts": 124,
+  "false_accept_rate": 0.7822878228782287,
+  "false_accepts": 212,
   "false_withhold_ci95": [
    0.0,
    0.08762453925039232
   ],
   "false_withhold_rate": 0.0,
   "false_withholds": 0,
-  "negatives": 183,
+  "negatives": 271,
   "parks": 0,
   "positives": 40,
-  "seconds": 2.8,
+  "seconds": 4.7,
   "withheld_correct": []
  },
  "full": {
-  "accepted_broken": [],
+  "accepted_broken": [
+   "semver/rare3_04.py"
+  ],
   "by_family": {
    "blind": {
     "ci95": [
@@ -183,37 +289,55 @@
     ],
     "false_accepts": 0,
     "negatives": 64
+   },
+   "rare-input-r3": {
+    "ci95": [
+     0.003687015979399688,
+     0.10899469137531158
+    ],
+    "false_accepts": 1,
+    "negatives": 48
+   },
+   "rare-input-r4": {
+    "ci95": [
+     0.0,
+     0.08762453925039232
+    ],
+    "false_accepts": 0,
+    "negatives": 40
    }
   },
   "caught_by_phase": {
-   "edges": 87,
+   "determinism": 7,
+   "edges": 115,
    "examples": 46,
-   "random": 16,
+   "random": 47,
    "static": 13,
-   "targeted": 21
+   "targeted": 42
   },
   "false_accept_ci95": [
-   0.0,
-   0.020560731657189836
+   0.000651662605302231,
+   0.02060276176131476
   ],
-  "false_accept_rate": 0.0,
-  "false_accepts": 0,
+  "false_accept_rate": 0.0036900369003690036,
+  "false_accepts": 1,
   "false_withhold_ci95": [
    0.0,
    0.08762453925039232
   ],
   "false_withhold_rate": 0.0,
   "false_withholds": 0,
-  "negatives": 183,
+  "negatives": 271,
   "parks": 0,
   "positives": 40,
-  "seconds": 92.0,
+  "seconds": 199.1,
   "withheld_correct": []
  },
  "full-minus-edges": {
   "accepted_broken": [
-   "parse_duration/rare_04.py",
-   "roman/rare_03.py"
+   "semver/rare3_04.py",
+   "semver/rare4_02.py",
+   "semver/rare_01.py"
   ],
   "by_family": {
    "blind": {
@@ -226,39 +350,58 @@
    },
    "rare-input": {
     "ci95": [
-     0.00861195771251659,
-     0.10697493882294247
+     0.0027634707504014047,
+     0.08334298900290629
     ],
-    "false_accepts": 2,
+    "false_accepts": 1,
     "negatives": 64
+   },
+   "rare-input-r3": {
+    "ci95": [
+     0.003687015979399688,
+     0.10899469137531158
+    ],
+    "false_accepts": 1,
+    "negatives": 48
+   },
+   "rare-input-r4": {
+    "ci95": [
+     0.0044267174077949195,
+     0.1288165948800778
+    ],
+    "false_accepts": 1,
+    "negatives": 40
    }
   },
   "caught_by_phase": {
+   "determinism": 6,
    "examples": 46,
-   "random": 96,
+   "random": 155,
    "static": 13,
-   "targeted": 26
+   "targeted": 48
   },
   "false_accept_ci95": [
-   0.003002187140958061,
-   0.03896705311388883
+   0.003771775855839975,
+   0.032036486066663754
   ],
-  "false_accept_rate": 0.01092896174863388,
-  "false_accepts": 2,
+  "false_accept_rate": 0.01107011070110701,
+  "false_accepts": 3,
   "false_withhold_ci95": [
    0.0,
    0.08762453925039232
   ],
   "false_withhold_rate": 0.0,
   "false_withholds": 0,
-  "negatives": 183,
+  "negatives": 271,
   "parks": 0,
   "positives": 40,
-  "seconds": 161.2,
+  "seconds": 236.9,
   "withheld_correct": []
  },
  "full-minus-properties": {
-  "accepted_broken": [],
+  "accepted_broken": [
+   "semver/rare3_04.py"
+  ],
   "by_family": {
    "blind": {
     "ci95": [
@@ -275,35 +418,59 @@
     ],
     "false_accepts": 0,
     "negatives": 64
+   },
+   "rare-input-r3": {
+    "ci95": [
+     0.003687015979399688,
+     0.10899469137531158
+    ],
+    "false_accepts": 1,
+    "negatives": 48
+   },
+   "rare-input-r4": {
+    "ci95": [
+     0.0,
+     0.08762453925039232
+    ],
+    "false_accepts": 0,
+    "negatives": 40
    }
   },
   "caught_by_phase": {
-   "edges": 87,
+   "determinism": 7,
+   "edges": 115,
    "examples": 46,
-   "random": 16,
+   "random": 47,
    "static": 13,
-   "targeted": 21
+   "targeted": 42
   },
   "false_accept_ci95": [
-   0.0,
-   0.020560731657189836
+   0.000651662605302231,
+   0.02060276176131476
   ],
-  "false_accept_rate": 0.0,
-  "false_accepts": 0,
+  "false_accept_rate": 0.0036900369003690036,
+  "false_accepts": 1,
   "false_withhold_ci95": [
    0.0,
    0.08762453925039232
   ],
   "false_withhold_rate": 0.0,
   "false_withholds": 0,
-  "negatives": 183,
+  "negatives": 271,
   "parks": 0,
   "positives": 40,
-  "seconds": 85.0,
+  "seconds": 206.6,
   "withheld_correct": []
  },
  "full-minus-random": {
-  "accepted_broken": [],
+  "accepted_broken": [
+   "lru/rare4_03.py",
+   "roman/rare3_05.py",
+   "roman/rare3_06.py",
+   "roman/rare4_03.py",
+   "semver/rare3_04.py",
+   "semver/rare3_06.py"
+  ],
   "by_family": {
    "blind": {
     "ci95": [
@@ -320,38 +487,61 @@
     ],
     "false_accepts": 0,
     "negatives": 64
+   },
+   "rare-input-r3": {
+    "ci95": [
+     0.03288322434995555,
+     0.19553565161066291
+    ],
+    "false_accepts": 4,
+    "negatives": 48
+   },
+   "rare-input-r4": {
+    "ci95": [
+     0.013820377146101098,
+     0.165041708179252
+    ],
+    "false_accepts": 2,
+    "negatives": 40
    }
   },
   "caught_by_phase": {
-   "edges": 87,
+   "determinism": 7,
+   "edges": 115,
    "examples": 46,
    "properties": 4,
    "static": 13,
-   "targeted": 33
+   "targeted": 80
   },
   "false_accept_ci95": [
-   0.0,
-   0.020560731657189836
+   0.010185499152326728,
+   0.0474535191040071
   ],
-  "false_accept_rate": 0.0,
-  "false_accepts": 0,
+  "false_accept_rate": 0.02214022140221402,
+  "false_accepts": 6,
   "false_withhold_ci95": [
    0.0,
    0.08762453925039232
   ],
   "false_withhold_rate": 0.0,
   "false_withholds": 0,
-  "negatives": 183,
+  "negatives": 271,
   "parks": 0,
   "positives": 40,
-  "seconds": 194.0,
+  "seconds": 205.4,
   "withheld_correct": []
  },
  "full-minus-random-and-properties": {
   "accepted_broken": [
+   "lru/rare4_03.py",
    "merge_intervals/rare_08.py",
    "rle/broken_07.py",
+   "roman/rare3_05.py",
+   "roman/rare3_06.py",
+   "roman/rare4_03.py",
    "roman/rare_02.py",
+   "semver/rare3_04.py",
+   "semver/rare3_06.py",
    "wrap/rare_01.py"
   ],
   "by_family": {
@@ -370,34 +560,53 @@
     ],
     "false_accepts": 3,
     "negatives": 64
+   },
+   "rare-input-r3": {
+    "ci95": [
+     0.03288322434995555,
+     0.19553565161066291
+    ],
+    "false_accepts": 4,
+    "negatives": 48
+   },
+   "rare-input-r4": {
+    "ci95": [
+     0.013820377146101098,
+     0.165041708179252
+    ],
+    "false_accepts": 2,
+    "negatives": 40
    }
   },
   "caught_by_phase": {
-   "edges": 87,
+   "determinism": 7,
+   "edges": 115,
    "examples": 46,
    "static": 13,
-   "targeted": 33
+   "targeted": 80
   },
   "false_accept_ci95": [
-   0.00853203484731592,
-   0.05484571400518802
+   0.020164678863707937,
+   0.06658201450439938
   ],
-  "false_accept_rate": 0.02185792349726776,
-  "false_accepts": 4,
+  "false_accept_rate": 0.03690036900369004,
+  "false_accepts": 10,
   "false_withhold_ci95": [
    0.0,
    0.08762453925039232
   ],
   "false_withhold_rate": 0.0,
   "false_withholds": 0,
-  "negatives": 183,
+  "negatives": 271,
   "parks": 0,
   "positives": 40,
-  "seconds": 83.1,
+  "seconds": 204.7,
   "withheld_correct": []
  },
  "full-minus-static": {
-  "accepted_broken": [],
+  "accepted_broken": [
+   "semver/rare3_04.py"
+  ],
   "by_family": {
    "blind": {
     "ci95": [
@@ -414,53 +623,91 @@
     ],
     "false_accepts": 0,
     "negatives": 64
+   },
+   "rare-input-r3": {
+    "ci95": [
+     0.003687015979399688,
+     0.10899469137531158
+    ],
+    "false_accepts": 1,
+    "negatives": 48
+   },
+   "rare-input-r4": {
+    "ci95": [
+     0.0,
+     0.08762453925039232
+    ],
+    "false_accepts": 0,
+    "negatives": 40
    }
   },
   "caught_by_phase": {
-   "edges": 87,
+   "determinism": 7,
+   "edges": 115,
    "examples": 59,
-   "random": 16,
-   "targeted": 21
+   "random": 47,
+   "targeted": 42
   },
   "false_accept_ci95": [
-   0.0,
-   0.020560731657189836
+   0.000651662605302231,
+   0.02060276176131476
   ],
-  "false_accept_rate": 0.0,
-  "false_accepts": 0,
+  "false_accept_rate": 0.0036900369003690036,
+  "false_accepts": 1,
   "false_withhold_ci95": [
    0.0,
    0.08762453925039232
   ],
   "false_withhold_rate": 0.0,
   "false_withholds": 0,
-  "negatives": 183,
+  "negatives": 271,
   "parks": 0,
   "positives": 40,
-  "seconds": 126.2,
+  "seconds": 205.1,
   "withheld_correct": []
  },
  "full-minus-targeted": {
   "accepted_broken": [
+   "lru/rare3_01.py",
+   "lru/rare3_03.py",
+   "lru/rare3_06.py",
+   "lru/rare4_04.py",
+   "lru/rare4_05.py",
    "lru/rare_01.py",
    "lru/rare_03.py",
    "lru/rare_05.py",
    "lru/rare_06.py",
    "lru/rare_08.py",
+   "merge_intervals/rare3_03.py",
+   "merge_intervals/rare3_05.py",
+   "merge_intervals/rare4_04.py",
    "merge_intervals/rare_01.py",
    "merge_intervals/rare_02.py",
    "merge_intervals/rare_04.py",
    "merge_intervals/rare_05.py",
    "merge_intervals/rare_06.py",
+   "normalize_path/rare3_01.py",
+   "normalize_path/rare3_04.py",
+   "normalize_path/rare4_03.py",
+   "normalize_path/rare4_04.py",
    "normalize_path/rare_06.py",
    "normalize_path/rare_08.py",
+   "parse_duration/rare3_04.py",
    "parse_duration/rare_07.py",
+   "rle/rare3_04.py",
+   "rle/rare3_06.py",
+   "rle/rare4_03.py",
+   "rle/rare4_04.py",
    "rle/rare_02.py",
    "rle/rare_08.py",
-   "roman/rare_04.py",
    "roman/rare_06.py",
-   "roman/rare_08.py",
+   "semver/rare3_01.py",
+   "semver/rare3_04.py",
+   "semver/rare3_05.py",
    "semver/rare_02.py",
+   "wrap/rare3_03.py",
+   "wrap/rare3_06.py",
+   "wrap/rare4_04.py",
    "wrap/rare_03.py",
    "wrap/rare_04.py"
   ],
@@ -475,35 +722,53 @@
    },
    "rare-input": {
     "ci95": [
-     0.2257039576708776,
-     0.45001123772545737
+     0.19904999589075245,
+     0.4177043259412798
     ],
-    "false_accepts": 21,
+    "false_accepts": 19,
     "negatives": 64
+   },
+   "rare-input-r3": {
+    "ci95": [
+     0.19945512167731494,
+     0.4533333725049633
+    ],
+    "false_accepts": 15,
+    "negatives": 48
+   },
+   "rare-input-r4": {
+    "ci95": [
+     0.10499864973166874,
+     0.34757607381856676
+    ],
+    "false_accepts": 8,
+    "negatives": 40
    }
   },
   "caught_by_phase": {
-   "edges": 87,
+   "determinism": 7,
+   "edges": 115,
    "examples": 46,
-   "random": 16,
+   "properties": 1,
+   "random": 47,
    "static": 13
   },
   "false_accept_ci95": [
-   0.07629168316449059,
-   0.16905838876809834
+   0.11674847458050577,
+   0.20285961968178937
   ],
-  "false_accept_rate": 0.11475409836065574,
-  "false_accepts": 21,
+  "false_accept_rate": 0.15498154981549817,
+  "false_accepts": 42,
   "false_withhold_ci95": [
    0.0,
    0.08762453925039232
   ],
   "false_withhold_rate": 0.0,
   "false_withholds": 0,
-  "negatives": 183,
+  "negatives": 271,
   "parks": 0,
   "positives": 40,
-  "seconds": 25.4,
+  "seconds": 60.5,
   "withheld_correct": []
  }
 }
