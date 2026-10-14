@@ -128,6 +128,10 @@ class GitCheckpoint:
             return
         self._git("update-ref", VERIFIED_REF, commit, expected_parent)
 
+    def force_ref(self, commit: str) -> None:
+        """Point the verified ref at ``commit`` unconditionally (journal reconciliation only)."""
+        self._git("update-ref", VERIFIED_REF, commit)
+
     def changed_paths(self, old: str, new: str) -> list[str]:
         out = self._git("diff", "--name-only", "--no-renames", old, new).decode()
         return [p for p in out.splitlines() if p]

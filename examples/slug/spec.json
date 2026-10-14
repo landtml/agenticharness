@@ -31,6 +31,30 @@
           "no:cacheprovider",
           "_hidden/test_unicode.py"
         ]
+      },
+      {
+        "name": "ascii_property",
+        "cmd": [
+          "python",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "_hidden/test_property.py::test_ascii_property"
+        ]
+      },
+      {
+        "name": "unicode_property",
+        "cmd": [
+          "python",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "_hidden/test_property.py::test_unicode_property"
+        ]
       }
     ],
     "protected": [
@@ -45,7 +69,8 @@
         "slug.py"
       ],
       "checks": [
-        "basic"
+        "basic",
+        "ascii_property"
       ]
     },
     {
@@ -56,7 +81,9 @@
       ],
       "checks": [
         "basic",
-        "unicode"
+        "unicode",
+        "ascii_property",
+        "unicode_property"
       ]
     }
   ],
