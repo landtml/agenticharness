@@ -179,3 +179,21 @@ def test_harness_runs_end_to_end_on_the_cli_provider(tmp_path, hidden):
     assert {c["role"] for c in calls} == {"manager", "worker"}
     assert all(c["provider"] == "claude-cli" for c in calls)
     assert abs(h.journal.get_run(rid).spent_usd - 0.001 * len(calls)) < 1e-9
+
+
+def test_cli_runs_from_an_empty_directory_not_the_callers(tmp_path, monkeypatch):
+    rec = str(tmp_path / "rec.json")
+    path = tmp_path / "claude"
+    path.write_text(
+        f"#!{sys.executable}\n"
+        "import json, os, sys\n"
+        f"open({rec!r}, 'w').write(json.dumps({{'cwd': os.getcwd(), 'ls': os.listdir('.')}}))\n"
+        "print(json.dumps({'is_error': False, 'result': 'ok', 'usage': {}}))\n"
+    )
+    path.chmod(path.stat().st_mode | stat.S_IEXEC)
+    monkeypatch.chdir(tmp_path)
+    ClaudeCliProvider(binary=str(path)).complete(
+        {"model": "m", "system": "s", "messages": [{"role": "user", "content": "hi"}]}
+    )
+    seen = json.load(open(rec))
+    assert seen["cwd"] != str(tmp_path) and seen["ls"] == []

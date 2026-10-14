@@ -21,6 +21,7 @@ import hashlib
 import json
 import os
 import subprocess
+import tempfile
 from typing import Any
 
 from .base import ProviderResponse, ProviderUnavailable
@@ -166,7 +167,12 @@ class ClaudeCliProvider:
     def complete(self, request: dict[str, Any]) -> ProviderResponse:
         cmd, prompt = self.build_command(request)
         try:
-            proc = subprocess.run(cmd, input=prompt, capture_output=True, text=True, timeout=self.timeout)
+            # Run from an empty directory: the CLI tells the model its working directory, and a worker must
+            # never learn a real path it could reach with its own tools.
+            with tempfile.TemporaryDirectory(prefix="urh-cli-") as nowhere:
+                proc = subprocess.run(
+                    cmd, input=prompt, capture_output=True, text=True, timeout=self.timeout, cwd=nowhere
+                )
         except subprocess.TimeoutExpired as e:
             raise ProviderUnavailable(f"claude CLI timed out after {self.timeout:.0f}s") from e
         except OSError as e:
