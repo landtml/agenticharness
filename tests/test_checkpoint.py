@@ -77,3 +77,10 @@ def test_each_epoch_gets_its_own_workspace(ckpt):
     assert os.path.isdir(ws1) and os.path.isdir(ws2)
     Path(ws1, "README.md").write_text("stale epoch write")
     assert Path(ws2, "README.md").read_text() == "hello\n"
+
+
+def test_export_of_an_empty_tree_writes_nothing(tmp_path):
+    c = GitCheckpoint(str(tmp_path / "run"))
+    root = c.init(None)
+    _files_out = _files(c, root, tmp_path / "out")
+    assert _files_out == []

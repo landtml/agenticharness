@@ -139,6 +139,8 @@ class GitCheckpoint:
     def export(self, commit: str, dest: str) -> None:
         """Write the tree of ``commit`` into ``dest`` (for the gate's throwaway copy)."""
         os.makedirs(dest, exist_ok=True)
+        if not self._git("ls-tree", commit).strip():
+            return  # an empty tree archives to a header-only tar, which tarfile cannot open
         data = self._git("archive", "--format=tar", commit)
         with tarfile.open(fileobj=io.BytesIO(data)) as tar:
             tar.extractall(dest, filter="data")
