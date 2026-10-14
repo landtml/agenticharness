@@ -158,8 +158,11 @@ def scrubbed_env(home: str, extra: dict[str, str] | None = None) -> dict[str, st
         "PYTHONUNBUFFERED": "1",
         "TMPDIR": os.environ.get("TMPDIR", "/tmp"),
     }
-    # Keep the interpreter that runs the harness reachable as `python`.
-    py_dir = os.path.dirname(os.path.realpath(shutil.which("python3") or "/usr/bin/python3"))
+    # Keep the interpreter that runs the harness reachable as `python`, unresolved: a virtualenv's bin/python
+    # is a symlink, and resolving it would lose the venv's packages.
+    py_dir = os.path.dirname(sys.executable) if sys.executable else ""
+    if not py_dir:
+        py_dir = os.path.dirname(os.path.realpath(shutil.which("python3") or "/usr/bin/python3"))
     if py_dir not in env["PATH"].split(":"):
         env["PATH"] = f"{py_dir}:{env['PATH']}"
     if extra:
