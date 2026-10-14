@@ -1,0 +1,230 @@
+{
+  "summary": {
+    "strict": {
+      "scenarios": 8,
+      "needed_a_person": 7,
+      "done": 1,
+      "avoidable_parks": 5,
+      "wrong_finishes": 0
+    },
+    "headless": {
+      "scenarios": 8,
+      "needed_a_person": 2,
+      "done": 6,
+      "avoidable_parks": 0,
+      "wrong_finishes": 0
+    }
+  },
+  "scenarios": [
+    {
+      "scenario": "clean",
+      "policy": "strict",
+      "status": "done",
+      "expected": null,
+      "human_touches": 0,
+      "parks": [],
+      "calls_by_role": {
+        "worker": 4
+      },
+      "spent_usd": 0.000109
+    },
+    {
+      "scenario": "budget_shortfall",
+      "policy": "strict",
+      "status": "parked",
+      "expected": null,
+      "human_touches": 1,
+      "parks": [
+        "budget"
+      ],
+      "calls_by_role": {},
+      "spent_usd": 0.0
+    },
+    {
+      "scenario": "provider_outage",
+      "policy": "strict",
+      "status": "parked",
+      "expected": null,
+      "human_touches": 1,
+      "parks": [
+        "outage"
+      ],
+      "calls_by_role": {
+        "worker": 1
+      },
+      "spent_usd": 0.0
+    },
+    {
+      "scenario": "no_script_check",
+      "policy": "strict",
+      "status": "parked",
+      "expected": null,
+      "human_touches": 1,
+      "parks": [
+        "unsure"
+      ],
+      "calls_by_role": {
+        "worker": 4
+      },
+      "spent_usd": 0.000109
+    },
+    {
+      "scenario": "hard_step",
+      "policy": "strict",
+      "status": "parked",
+      "expected": null,
+      "human_touches": 1,
+      "parks": [
+        "repairs_exhausted"
+      ],
+      "calls_by_role": {
+        "worker": 6
+      },
+      "spent_usd": 0.000181
+    },
+    {
+      "scenario": "no_progress_repair",
+      "policy": "strict",
+      "status": "parked",
+      "expected": null,
+      "human_touches": 1,
+      "parks": [
+        "repairs_exhausted"
+      ],
+      "calls_by_role": {
+        "worker": 6
+      },
+      "spent_usd": 0.000181
+    },
+    {
+      "scenario": "hopeless_step",
+      "policy": "strict",
+      "status": "parked",
+      "expected": null,
+      "human_touches": 1,
+      "parks": [
+        "repairs_exhausted"
+      ],
+      "calls_by_role": {
+        "worker": 6
+      },
+      "spent_usd": 0.000181
+    },
+    {
+      "scenario": "runaway_cost",
+      "policy": "strict",
+      "status": "parked",
+      "expected": null,
+      "human_touches": 1,
+      "parks": [
+        "budget"
+      ],
+      "calls_by_role": {},
+      "spent_usd": 0.0
+    },
+    {
+      "scenario": "clean",
+      "policy": "headless",
+      "status": "done",
+      "expected": "done",
+      "human_touches": 0,
+      "parks": [],
+      "calls_by_role": {
+        "worker": 4
+      },
+      "spent_usd": 0.000109
+    },
+    {
+      "scenario": "budget_shortfall",
+      "policy": "headless",
+      "status": "done",
+      "expected": "done",
+      "human_touches": 0,
+      "parks": [],
+      "calls_by_role": {
+        "worker": 4
+      },
+      "spent_usd": 0.000109
+    },
+    {
+      "scenario": "provider_outage",
+      "policy": "headless",
+      "status": "done",
+      "expected": "done",
+      "human_touches": 0,
+      "parks": [],
+      "calls_by_role": {
+        "worker": 4
+      },
+      "spent_usd": 0.000109
+    },
+    {
+      "scenario": "no_script_check",
+      "policy": "headless",
+      "status": "done",
+      "expected": "done",
+      "human_touches": 0,
+      "parks": [],
+      "calls_by_role": {
+        "worker": 4,
+        "judge": 1
+      },
+      "spent_usd": 0.000134
+    },
+    {
+      "scenario": "hard_step",
+      "policy": "headless",
+      "status": "done",
+      "expected": "done",
+      "human_touches": 0,
+      "parks": [],
+      "calls_by_role": {
+        "worker": 6,
+        "escalation": 2
+      },
+      "spent_usd": 0.003073
+    },
+    {
+      "scenario": "no_progress_repair",
+      "policy": "headless",
+      "status": "done",
+      "expected": "done",
+      "human_touches": 0,
+      "parks": [],
+      "calls_by_role": {
+        "worker": 6,
+        "escalation": 2
+      },
+      "spent_usd": 0.003073
+    },
+    {
+      "scenario": "hopeless_step",
+      "policy": "headless",
+      "status": "parked",
+      "expected": "parked",
+      "human_touches": 1,
+      "parks": [
+        "repairs_exhausted"
+      ],
+      "calls_by_role": {
+        "worker": 6,
+        "escalation": 2
+      },
+      "spent_usd": 0.003073
+    },
+    {
+      "scenario": "runaway_cost",
+      "policy": "headless",
+      "status": "parked",
+      "expected": "parked",
+      "human_touches": 1,
+      "parks": [
+        "budget"
+      ],
+      "calls_by_role": {
+        "worker": 1
+      },
+      "spent_usd": 5.0001
+    }
+  ]
+}

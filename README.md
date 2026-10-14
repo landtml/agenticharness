@@ -64,13 +64,16 @@ urh daemon --interval 5                # headless: keep driving runnable runs
 5. Every model call goes through the **gateway**: model and provider come from the run's pins, the worst-case
    cost is reserved against the run's one budget before the call and settled after, and the call is logged
    with tokens, cache reads and writes, latency and blob references. Outages retry, then trip a circuit
-   breaker and park the run.
+   breaker and park the run; that park wakes itself once the breaker closes. A budget shortfall tops up
+   within a configured allowance before it parks.
 6. The workspace is snapshotted to an unverified commit and the **gate** runs the spec's checks on a
    throwaway export with the hidden tests copied in. Changes to protected paths fail. No applicable check
-   means `unsure`, which parks.
+   means `unsure`, which goes to a blind **judge** model (it sees the step and files, never the worker's
+   own account of them).
 7. **pass**: the commit is promoted (compare-and-swap on `refs/heads/verified`), the journal advances, and the
    step's held effects fire. **fail**: a bounded repair from the failed work; an attempt that reproduces a
-   failed tree parks as no progress. **unsure**, budget, outage, exhausted repairs: park.
+   failed tree counts as a failure. When repairs run out, one attempt goes to the **escalation** model
+   before the run parks. A park means a person is needed, so it is the failure mode `urh stats` tracks.
 
 ## Effects
 
@@ -97,6 +100,8 @@ written off at its reservation, and step 2 re-runs once. Call-level replay (D2) 
 | `pricing.py` | Per-model price book with overrides and a pessimistic fallback |
 | `effects.py` | Effect guard and adapters (outbox file, webhook, unkeyed) |
 | `gate.py` | Script gate and mutant-corpus audit |
+| `judge.py` | Blind model judge for steps no script check covers |
+| `stats.py` | Outcome metrics: park rate, human touches, cost and calls per verified run |
 | `worker.py` | Haiku 5.5 tool loop and confined workspace tools |
 | `manager.py` | Code manager and Opus 5.5 manager |
 | `context.py` | Stable prefix and per-step messages |
@@ -106,7 +111,6 @@ written off at its reservation, and step 2 re-runs once. Call-level replay (D2) 
 
 ## Not built yet
 
-Cue-triggered memory, a model judge for checks no script decides, a chat inbox and scheduled wake-ups for
-parked runs, cross-run rate limits beyond max active runs and a global spend cap, a mount-namespace
+Cue-triggered memory, a chat inbox for the parks that remain, cross-run rate limits beyond max active runs and a global spend cap, a mount-namespace
 `/work` sandbox, call replay (D2), and the offline release loop. Postgres can replace SQLite when runs
 span machines.
