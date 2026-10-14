@@ -219,12 +219,31 @@ class Journal:
         self.path = os.fspath(path)
         os.makedirs(os.path.dirname(os.path.abspath(self.path)), exist_ok=True)
         self._lock = threading.RLock()
-        self._conn = sqlite3.connect(self.path, timeout=30, isolation_level=None, check_same_thread=False)
-        self._conn.row_factory = sqlite3.Row
-        self._conn.execute("PRAGMA journal_mode=WAL")
-        self._conn.execute("PRAGMA synchronous=FULL")
-        self._conn.execute("PRAGMA busy_timeout=30000")
+        # One connection per thread: a shared connection lets concurrent readers interleave on its
+        # cursor and read each other's rows. Writers still serialize (in-process lock + BEGIN IMMEDIATE).
+        self._local = threading.local()
+        self._all: list[sqlite3.Connection] = []
+        self._closed = False
         self._migrate()
+
+    def _connect(self) -> sqlite3.Connection:
+        conn = sqlite3.connect(self.path, timeout=30, isolation_level=None, check_same_thread=False)
+        conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA synchronous=FULL")
+        conn.execute("PRAGMA busy_timeout=30000")
+        return conn
+
+    @property
+    def _conn(self) -> sqlite3.Connection:
+        conn = getattr(self._local, "conn", None)
+        if conn is None:
+            if self._closed:
+                raise sqlite3.ProgrammingError("journal is closed")
+            conn = self._local.conn = self._connect()
+            with self._lock:
+                self._all.append(conn)
+        return conn
 
     # ------------------------------------------------------------------ plumbing
     @contextmanager
@@ -258,7 +277,10 @@ class Journal:
 
     def close(self) -> None:
         with self._lock:
-            self._conn.close()
+            self._closed = True
+            for conn in self._all:
+                conn.close()
+            self._all.clear()
 
     def schema_version(self) -> int:
         row = self._conn.execute("SELECT value FROM meta WHERE key='schema_version'").fetchone()

@@ -135,3 +135,30 @@ def test_blob_store_survives_concurrent_writers_of_the_same_blob(tmp_path):
         t.join()
     assert errors == []
     assert not [p for p in (tmp_path / "blobs").rglob("*.tmp")]
+
+
+def test_concurrent_readers_never_see_each_others_rows(tmp_path):
+    import threading
+
+    from urh.journal import Journal
+
+    j = Journal(str(tmp_path / "j.sqlite"))
+    ids = [j.create_run({"goal": f"g{k}"}, {"models": {}}, 1.0)[0] for k in range(8)]
+    errors = []
+
+    def read(rid, goal):
+        try:
+            for _ in range(50):
+                run = j.get_run(rid)
+                assert run.spec["goal"] == goal
+                j.events(rid)
+        except Exception as e:  # pragma: no cover - the failure being tested
+            errors.append(e)
+
+    threads = [threading.Thread(target=read, args=(rid, f"g{k}")) for k, rid in enumerate(ids)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    j.close()
+    assert errors == []
