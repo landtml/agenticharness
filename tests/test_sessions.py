@@ -30,7 +30,7 @@ def script():
 
 @pytest.fixture
 def sess(harness_factory):
-    h = harness_factory(script())
+    h = harness_factory(script(), manager="stepwise")  # the script drives the stepwise manager's plan
     return h, Sessions(h)
 
 
