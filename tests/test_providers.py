@@ -149,7 +149,11 @@ def test_roles_map_to_any_model_ids(tmp_path, hidden):
     )
     rid = h.submit(make_spec(hidden))
     assert h.run(rid) == "done"
-    assert h.journal.get_run(rid).pins["models"] == {**models, "escalation": "vendor/big-planner"}
+    assert h.journal.get_run(rid).pins["models"] == {
+        **models,
+        "escalation": "vendor/big-planner",
+        "planner": "vendor/big-planner",
+    }
     calls = h.journal.model_calls(rid)
     assert {c["model"] for c in calls} == {"vendor/small-coder"}
     assert all(c["cost_usd"] > 0 for c in calls)

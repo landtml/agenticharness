@@ -30,6 +30,7 @@ from .judge import LLMJudge
 from .manager import CodeManager, LLMManager, Manager
 from .planner import PlanningManager
 from .pricing import PriceBook
+from .routing import resolve_routes
 from .spec import StepSpec, TaskSpec
 from .worker import Worker, Workspace
 
@@ -66,6 +67,8 @@ class HarnessConfig:
     max_crashes: int = 3  # unexpected exceptions on one run before it parks as harness_error
     escalation_max_fraction: float = 0.5  # an escalation may use at most this share of the remaining budget
     escalate: bool = True  # one attempt on the escalation model before repairs_exhausted parks
+    # Which role answers each planning call site, at what effort (see urh.routing); pinned per run.
+    routes: dict[str, Any] = field(default_factory=dict)
 
 
 class _Heartbeat(threading.Thread):
@@ -133,6 +136,9 @@ class Harness:
             "harness_version": HARNESS_VERSION,
             "schema_version": SCHEMA_VERSION,
             **self.gateway.pins_for(self.config.models),
+            "routes": resolve_routes(
+                self.config.routes, self.config.planner_effort, self.config.planner_replan_effort
+            ),
         }
         run_id, created = self.journal.create_run(spec.to_dict(), pins, budget, dedupe_key=dedupe_key)
         if created and cap is not None and self.journal.total_spent() > cap + budget:
@@ -589,7 +595,7 @@ class Harness:
         calls = self.journal.model_calls(run_id)
         per_attempt: dict[int, float] = {}
         for c in calls:
-            if c["step_index"] == i and c["role"] == "worker":
+            if c["step_index"] == i and c["role"] == "worker" and c["attempt"] > 0:
                 per_attempt[c["attempt"]] = per_attempt.get(c["attempt"], 0.0) + (c["cost_usd"] or 0.0)
         attempt_cost = sum(per_attempt.values()) / len(per_attempt) if per_attempt else 0.0
         prices = self.gateway.prices
@@ -597,8 +603,14 @@ class Harness:
             prices.price(pins["models"]["worker"]).input, 1e-9
         )
         escalation = attempt_cost * ratio
-        manager = [c["cost_usd"] or 0.0 for c in calls if c["role"] == "manager"]
-        after = attempt_cost + (max(manager) if manager else attempt_cost)
+        # The replan runs on the manager; a plan another role wrote is rescaled to the manager's prices.
+        manager_in = prices.price(pins["models"].get("manager", "")).input
+        planning = [
+            (c["cost_usd"] or 0.0) * manager_in / max(prices.price(c["model"]).input, 1e-9)
+            for c in calls
+            if c["attempt"] == 0
+        ]
+        after = attempt_cost + (max(planning) if planning else attempt_cost)
         ok = escalation <= self.config.escalation_max_fraction * remaining and escalation + after <= remaining
         if not ok:
             self.journal.event(

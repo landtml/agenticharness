@@ -119,7 +119,7 @@ def test_one_planner_call_drives_every_step(make, hidden):
     rid = h.submit(make_spec(hidden, steps=None))
     assert h.run(rid) == "done"
     roles = [c["role"] for c in h.journal.model_calls(rid)]
-    assert roles.count("manager") == 1
+    assert roles.count("planner") == 1
     assert [e["why"] for e in h.journal.events(rid) if e["kind"] == "plan"] == ["plan"]
     # The worker sees its expected output and the gate's plan checks; planner prompts mark the goal untrusted.
     assert (
@@ -242,7 +242,7 @@ def test_missing_spec_checks_on_last_step_are_added_in_code_not_by_a_retry(make,
     h, p = make(steps_script(), [forgot])
     rid = h.submit(make_spec(hidden, steps=None))
     assert h.run(rid) == "done"
-    assert [c["role"] for c in h.journal.model_calls(rid)].count("manager") == 1
+    assert [c["role"] for c in h.journal.model_calls(rid)].count("planner") == 1
     assert h.planner.current_plan(rid).steps[-1].spec_checks == ["add", "mul"]
 
 

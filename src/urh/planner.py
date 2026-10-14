@@ -24,6 +24,7 @@ from pydantic import BaseModel, Field, ValidationError
 
 from .gateway import CallContext, ModelGateway
 from .manager import DONE
+from .routing import Route, cascade, route_for
 from .spec import StepSpec, TaskSpec
 
 MAX_STEPS_PER_PLAN = 40
@@ -301,7 +302,7 @@ class PlanningManager:
         plans = [e for e in self.gateway.journal.events(run_id) if e["kind"] == "plan"]
         return Plan.model_validate(plans[-1]["plan"]) if plans else None
 
-    # -- the one model call, retried once with the validator's errors -----------------
+    # -- the model call: routed, retried once with the validator's errors, then cascaded --
     def _call(
         self,
         run_id: str,
@@ -313,7 +314,49 @@ class PlanningManager:
         prompt: str,
         check,
     ) -> Plan:
-        calls = sum(1 for c in self.gateway.journal.model_calls(run_id) if c["role"] == "manager")
+        """Ask the route's roles in order; a role whose answer the validator rejects twice hands over to
+        the next. Runs pinned before routing existed ask the manager, as they always did."""
+        fallback = Route(("manager",), self.replan_effort if why == "replan" else self.effort)
+        route = route_for(pins, why, fallback)
+        roles = cascade(pins, route) or ["manager"]
+        effort = route.effort or fallback.effort
+        last: PlanRejected | None = None
+        for n, role in enumerate(roles):
+            if last is not None:
+                self.gateway.journal.event(
+                    run_id,
+                    epoch,
+                    "plan_fallback",
+                    why=why,
+                    step_index=step_index,
+                    from_role=roles[n - 1],
+                    to_role=role,
+                    errors=str(last)[:1000],
+                )
+            try:
+                return self._ask(run_id, epoch, pins, spec, step_index, why, prompt, check, role, effort)
+            except PlanRejected as e:
+                if "call limit" in str(e):
+                    raise
+                last = e
+        assert last is not None
+        raise last
+
+    def _ask(
+        self,
+        run_id: str,
+        epoch: int,
+        pins: dict[str, Any],
+        spec: TaskSpec,
+        step_index: int,
+        why: str,
+        prompt: str,
+        check,
+        role: str,
+        effort: str | None,
+    ) -> Plan:
+        # Planning calls are the run's attempt-0 calls, whichever role answered them.
+        calls = sum(1 for c in self.gateway.journal.model_calls(run_id) if c["attempt"] == 0)
         errors: list[str] = []
         for k in range(2):
             if calls + k >= self.max_plan_calls:
@@ -321,20 +364,16 @@ class PlanningManager:
             text = prompt
             if errors:
                 text += "\n\nYour previous answer was rejected:\n- " + "\n- ".join(errors[:12])
-            ctx = CallContext(run_id, epoch, step_index, 0, "manager", calls + k)
-            resp = self.gateway.call(
-                ctx,
-                pins,
-                {
-                    "max_tokens": 16000,
-                    "system": [
-                        {"type": "text", "text": PLANNER_SYSTEM, "cache_control": {"type": "ephemeral"}}
-                    ],
-                    "messages": [{"role": "user", "content": text}],
-                    "effort": self.replan_effort if why == "replan" else self.effort,
-                    "response_schema": PLAN_SCHEMA,
-                },
-            )
+            ctx = CallContext(run_id, epoch, step_index, 0, role, calls + k)
+            request: dict[str, Any] = {
+                "max_tokens": 16000,
+                "system": [{"type": "text", "text": PLANNER_SYSTEM, "cache_control": {"type": "ephemeral"}}],
+                "messages": [{"role": "user", "content": text}],
+                "response_schema": PLAN_SCHEMA,
+            }
+            if effort:
+                request["effort"] = effort
+            resp = self.gateway.call(ctx, pins, request)
             raw = "".join(b.get("text", "") for b in resp.content if b.get("type") == "text")
             try:
                 plan = Plan.model_validate(json.loads(_strip_fence(raw)))
@@ -345,7 +384,7 @@ class PlanningManager:
             errors = check(plan)
             if not errors:
                 self.gateway.journal.event(
-                    run_id, epoch, "plan", why=why, step_index=step_index, plan=plan.model_dump()
+                    run_id, epoch, "plan", why=why, step_index=step_index, plan=plan.model_dump(), role=role
                 )
                 return plan
         raise PlanRejected("; ".join(errors))

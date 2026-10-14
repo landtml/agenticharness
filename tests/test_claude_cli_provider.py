@@ -176,7 +176,7 @@ def test_harness_runs_end_to_end_on_the_cli_provider(tmp_path, hidden):
     rid = h.submit(make_spec(hidden, steps=None))
     assert h.run(rid) == "done"
     calls = h.journal.model_calls(rid)
-    assert {c["role"] for c in calls} == {"manager", "worker"}
+    assert {c["role"] for c in calls} == {"planner", "worker"}
     assert all(c["provider"] == "claude-cli" for c in calls)
     assert abs(h.journal.get_run(rid).spent_usd - 0.001 * len(calls)) < 1e-9
 

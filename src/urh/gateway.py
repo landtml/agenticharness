@@ -42,9 +42,11 @@ __all__ = [
     "estimate_reservation",
 ]
 
-ROLES = ("manager", "worker", "judge", "escalation")
+ROLES = ("manager", "planner", "worker", "judge", "escalation")
 DEFAULT_MODELS: dict[str, str] = {
     "manager": "claude-opus-5-5",
+    # writes plans and milestone expansions; replans go to the manager (see urh.routing)
+    "planner": "claude-opus-5-5",
     "worker": "claude-haiku-5-5",
     "judge": "claude-haiku-5-5",
     # one stronger attempt when the worker's repairs are exhausted, before anything parks
@@ -103,7 +105,7 @@ class CallContext:
     epoch: int
     step_index: int
     attempt: int
-    role: str  # manager | worker | judge
+    role: str  # one of ROLES
     call_index: int
 
 
@@ -140,7 +142,7 @@ class ModelGateway:
         models = dict(models or {})
         # A role left out follows its natural sibling before the defaults, so a config that names
         # only vendor models never silently falls back to another vendor for judge or escalation.
-        for role, sibling in (("judge", "worker"), ("escalation", "manager")):
+        for role, sibling in (("judge", "worker"), ("escalation", "manager"), ("planner", "manager")):
             if role not in models and sibling in models:
                 models[role] = models[sibling]
         chosen = {**DEFAULT_MODELS, **models}

@@ -21,6 +21,7 @@ import time
 
 from urh.cli import _provider
 from urh.orchestrator import Harness, HarnessConfig
+from urh.routing import load_routing
 from urh.spec import Check, GateSpec, StepSpec, TaskSpec
 from urh.stats import compute as journal_stats
 
@@ -65,8 +66,19 @@ def hidden_pass(home: str, rid: str, name: str) -> bool:
         return subprocess.run(cmd, cwd=tree, capture_output=True, timeout=300).returncode == 0
 
 
-def run_task(name: str, provider: str, home: str, budget: float, planner_effort: str, mode: str) -> dict:
-    cfg = HarnessConfig(planner_effort=planner_effort, outage_wake_s=OUTAGE_WAKE_S)
+def run_task(
+    name: str,
+    provider: str,
+    home: str,
+    budget: float,
+    planner_effort: str,
+    mode: str,
+    routing: str | None = None,
+) -> dict:
+    routes, models = load_routing(routing)
+    cfg = HarnessConfig(
+        planner_effort=planner_effort, outage_wake_s=OUTAGE_WAKE_S, routes=routes, models=models
+    )
     h = Harness(home, _provider(provider), config=cfg)
     t0 = time.time()
     spec = baseline_spec(name, budget) if mode == "plain" else task_spec(name, budget)
@@ -90,6 +102,8 @@ def run_task(name: str, provider: str, home: str, budget: float, planner_effort:
     for c in calls:
         by_role[c["role"]] = by_role.get(c["role"], 0.0) + float(c["cost_usd"] or 0.0)
     total = sum(by_role.values())
+    # Planning is every attempt-0 call (plan, expand, replan), whichever role's model answered it.
+    planning = sum(float(c["cost_usd"] or 0.0) for c in calls if c["attempt"] == 0)
     return {
         "task": name,
         "mode": mode,
@@ -100,7 +114,10 @@ def run_task(name: str, provider: str, home: str, budget: float, planner_effort:
         "steps": h.journal.get_run(rid).step_index,
         "cost_usd": round(total, 4),
         "cost_by_role": {k: round(v, 4) for k, v in by_role.items()},
-        "planner_share": round(by_role.get("manager", 0.0) / total, 3) if total else 0.0,
+        "planning_usd": round(planning, 4),
+        "planner_share": round(planning / total, 3) if total else 0.0,
+        "plan_roles": [e.get("role", "manager") for e in events if e["kind"] == "plan"],
+        "plan_fallbacks": sum(1 for e in events if e["kind"] == "plan_fallback"),
         "plan_calls": [e["why"] for e in events if e["kind"] == "plan"],
         "replans": sum(1 for e in events if e["kind"] == "step_replanned"),
         "replan_failed": sum(1 for e in events if e["kind"] == "replan_failed"),
@@ -126,9 +143,10 @@ def summarize(rows: list[dict]) -> dict:
         "replans": sum(r["replans"] for r in rows),
         "cost_usd": round(cost, 4),
         "cost_per_verified": round(cost / len(done), 4) if done else None,
-        "planner_share": round(sum(r["cost_by_role"].get("manager", 0.0) for r in rows) / cost, 3)
-        if cost
-        else 0.0,
+        "planner_share": round(sum(r.get("planning_usd", 0.0) for r in rows) / cost, 3) if cost else 0.0,
+        "plan_fallbacks": sum(r.get("plan_fallbacks", 0) for r in rows),
+        "escalations": sum(r.get("escalations", 0) for r in rows),
+        "mean_seconds": round(sum(r.get("seconds", 0.0) for r in rows) / n, 1) if n else 0.0,
     }
 
 
@@ -139,6 +157,7 @@ def main() -> int:
     ap.add_argument("--budget", type=float, default=1.0)
     ap.add_argument("--planner-effort", default="medium")
     ap.add_argument("--mode", choices=["harness", "plain"], default="harness")
+    ap.add_argument("--routing", help="routing preset or JSON, as urh --routing (e.g. cheap-plan)")
     ap.add_argument("--repeat", type=int, default=1)
     ap.add_argument("--out")
     ap.add_argument("--keep", help="keep each run's harness home (journal, blobs, repo) under this directory")
@@ -150,7 +169,9 @@ def main() -> int:
         for k, name in enumerate(n for n in names for _ in range(args.repeat)):
             home = os.path.join(tmp, f"{name}-{k}")
             try:
-                row = run_task(name, args.provider, home, args.budget, args.planner_effort, args.mode)
+                row = run_task(
+                    name, args.provider, home, args.budget, args.planner_effort, args.mode, args.routing
+                )
             except Exception as e:  # a harness crash is a result, and the worst one
                 row = {
                     "task": name,
@@ -166,7 +187,8 @@ def main() -> int:
                 }
             print(json.dumps(row), flush=True)
             rows.append(row)
-    report = {"summary": summarize(rows), "runs": rows}
+    config = {"routing": args.routing, "planner_effort": args.planner_effort, "mode": args.mode}
+    report = {"config": config, "summary": summarize(rows), "runs": rows}
     print(json.dumps(report["summary"], indent=2))
     if args.out:
         os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)

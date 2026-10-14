@@ -10,6 +10,8 @@ import sys
 from . import notify, server, stats
 from .gateway import AnthropicProvider, Provider
 from .orchestrator import Harness, HarnessConfig
+from .pricing import PriceBook
+from .routing import PRESETS, load_routing
 from .runtime import Runtime
 from .spec import TaskSpec
 
@@ -39,12 +41,20 @@ def _provider(name: str) -> Provider:
 
 
 def _harness(args: argparse.Namespace) -> Harness:
+    try:
+        routes, routed_models = load_routing(args.routing)
+        models = {**routed_models, **(json.loads(args.models) if args.models else {})}
+    except ValueError as e:
+        raise SystemExit(str(e)) from e
     cfg = HarnessConfig(
         lease_ttl=args.lease_ttl,
         heartbeat_s=args.heartbeat,
         provider_backoff_s=float(os.environ.get("URH_BACKOFF_S", "2.0")),
+        models=models,  # the gateway fills unnamed roles from their siblings, then the defaults
+        routes=routes,
     )
-    return Harness(args.home, _provider(args.provider), config=cfg)
+    prices = PriceBook.from_json(args.prices) if args.prices else None
+    return Harness(args.home, _provider(args.provider), config=cfg, prices=prices)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -57,6 +67,12 @@ def main(argv: list[str] | None = None) -> int:
         "--models",
         default=os.environ.get("URH_MODELS"),
         help='role-to-model JSON, e.g. \'{"manager": "...", "worker": "..."}\'',
+    )
+    p.add_argument(
+        "--routing",
+        default=os.environ.get("URH_ROUTING"),
+        help=f"planning routes: a preset ({', '.join(PRESETS)}) or JSON, e.g. "
+        '\'{"plan": {"roles": ["planner", "manager"], "effort": "low"}}\'',
     )
     p.add_argument(
         "--prices",
