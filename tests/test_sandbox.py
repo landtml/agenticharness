@@ -7,9 +7,10 @@ import pytest
 from urh import sandbox
 from urh.worker import Workspace
 
-pytestmark = pytest.mark.skipif(not sandbox.jail_available(), reason="no user/mount namespaces here")
+needs_jail = pytest.mark.skipif(not sandbox.jail_available(), reason="no user/mount namespaces here")
 
 
+@needs_jail
 def test_worker_cannot_leave_its_workspace(tmp_path):
     secret_dir = tmp_path / "harness-home"
     secret_dir.mkdir()
@@ -27,6 +28,7 @@ def test_worker_cannot_leave_its_workspace(tmp_path):
     assert not os.path.exists("/home/x")
 
 
+@needs_jail
 def test_workspace_is_writable_and_shared_with_the_host(tmp_path):
     r = sandbox.run("pwd; echo made > out.txt; echo $HOME", cwd=str(tmp_path))
     assert r.returncode == 0, r.stderr
@@ -34,6 +36,7 @@ def test_workspace_is_writable_and_shared_with_the_host(tmp_path):
     assert (tmp_path / "out.txt").read_text() == "made\n"
 
 
+@needs_jail
 def test_no_host_processes_and_no_network(tmp_path):
     r = sandbox.run("ls /proc | grep -c '^[0-9]'; cat /proc/1/cmdline | tr '\\0' ' '", cwd=str(tmp_path))
     assert int(r.stdout.split()[0]) < 10  # only the jail's own processes
@@ -43,6 +46,7 @@ def test_no_host_processes_and_no_network(tmp_path):
     assert r.returncode != 0
 
 
+@needs_jail
 def test_python_and_pytest_still_work(tmp_path):
     (tmp_path / "test_x.py").write_text("def test_ok():\n    assert 1 + 1 == 2\n")
     r = sandbox.run("python -m pytest -q -p no:cacheprovider", cwd=str(tmp_path), timeout=120)
@@ -54,3 +58,10 @@ def test_require_refuses_without_a_jail(tmp_path, monkeypatch):
     monkeypatch.setenv("URH_SANDBOX", "require")
     r = sandbox.run("echo hi", cwd=str(tmp_path))
     assert r.returncode == 126 and "sandbox required" in r.stderr
+
+
+def test_env_keeps_the_harness_interpreter_unresolved():
+    import sys
+
+    env_path = sandbox.scrubbed_env("/x")["PATH"].split(":")
+    assert os.path.dirname(sys.executable) in env_path
