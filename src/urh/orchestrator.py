@@ -23,7 +23,7 @@ from .checkpoint import GitCheckpoint
 from .context import step_message, system_blocks
 from .effects import EffectAdapter, EffectGuard, OutboxFileAdapter
 from .gate import ScriptGate, Verdict
-from .gateway import DEFAULT_MODELS, CallContext, ModelGateway, Provider, ProviderDown
+from .gateway import CallContext, ModelGateway, ModelNotAllowed, Provider, ProviderDown
 from .journal import SCHEMA_VERSION, BudgetExceeded, Journal, LeaseLost
 from .judge import LLMJudge, contradiction
 from .manager import CodeManager, LLMManager, Manager
@@ -50,7 +50,7 @@ class HarnessConfig:
     provider_backoff_s: float = 2.0
     command_timeout: float = 60.0
     # Which model plays which role. Any provider's model ids work; these are only the defaults.
-    models: dict[str, str] = field(default_factory=lambda: dict(DEFAULT_MODELS))
+    models: dict[str, str] = field(default_factory=dict)  # roles left out use DEFAULT_MODELS (see pins_for)
     # Policies that resolve would-be parks without a person. A park is a failure mode, not a normal path.
     auto_topup_usd: float = 0.0  # budget added automatically when a run runs dry ...
     max_auto_topups: int = 0  # ... at most this many times per run
@@ -60,9 +60,8 @@ class HarnessConfig:
     max_crashes: int = 3  # unexpected exceptions on one run before it parks as harness_error
     escalation_max_fraction: float = 0.5  # an escalation may use at most this share of the remaining budget
     escalate: bool = True  # one attempt on the escalation model before repairs_exhausted parks
-    detect_contradictions: bool = (
-        True  # after two identical check failures, ask whether the step is impossible
-    )
+    allowed_models: list[str] | None = None  # if set, no call may use any other model (pins are checked too)
+    detect_contradictions: bool = True  # after 2 identical check failures, ask if the step is impossible
 
 
 class _Heartbeat(threading.Thread):
@@ -108,6 +107,7 @@ class Harness:
             backoff_s=self.config.provider_backoff_s,
             prices=prices,
             max_concurrent_calls=self.config.max_concurrent_calls,
+            allowed_models=self.config.allowed_models,
         )
         if adapters is None:
             adapters = [OutboxFileAdapter(os.path.join(self.home, "outbox"))]
@@ -176,6 +176,18 @@ class Harness:
             return self._drive(run_id, epoch, ckpt)
         except LeaseLost:
             return "lease_lost"
+        except ModelNotAllowed as e:
+            # pinned before the allowlist changed: retrying cannot help, a person must re-pin or lift the limit
+            run = self.journal.get_run(run_id)
+            attempts = self.journal.attempts(run_id)
+            return self._park(
+                run_id,
+                epoch,
+                attempts[-1]["step_index"] if attempts else 0,
+                "model_not_allowed",
+                f"{e}. Lift the limit or resubmit the task.",
+                run.verified_commit,
+            )
         except Exception as e:
             # A harness bug, not a model failure. Journal it; a run that keeps crashing parks instead of looping.
             self.journal.event(run_id, epoch, "harness_crash", error=repr(e)[:500])

@@ -32,6 +32,7 @@ __all__ = [
     "CircuitBreaker",
     "DEFAULT_MODELS",
     "ModelGateway",
+    "ModelNotAllowed",
     "PRICES",
     "Price",
     "Provider",
@@ -61,6 +62,10 @@ def cost_usd(model: str, usage: dict[str, int]) -> float:
 
 def estimate_reservation(model: str, request: dict[str, Any]) -> float:
     return DEFAULT_BOOK.reservation(model, request)
+
+
+class ModelNotAllowed(ValueError):
+    """A role maps to a model outside the operator's allowlist. Raised before any money is reserved."""
 
 
 @dataclass
@@ -121,8 +126,11 @@ class ModelGateway:
         max_concurrent_calls: int | None = None,
         rate_limit_retries: int = 8,
         max_rate_wait_s: float = 120.0,
+        allowed_models: list[str] | None = None,
     ):
         self.journal = journal
+        # an operator's hard limit on which models may be called at all ("no Opus for now")
+        self.allowed_models = frozenset(allowed_models) if allowed_models else None
         # one gate for every run in this process: parallel runs share the provider's rate limit
         self._slots = threading.BoundedSemaphore(max_concurrent_calls) if max_concurrent_calls else None
         self.rate_limit_retries = rate_limit_retries
@@ -144,6 +152,14 @@ class ModelGateway:
             if role not in models and sibling in models:
                 models[role] = models[sibling]
         chosen = {**DEFAULT_MODELS, **models}
+        if self.allowed_models is not None:
+            # a role nobody configured falls to an allowed model of its sibling rather than a forbidden default
+            for role, sibling in (("manager", "worker"), ("judge", "worker"), ("escalation", "manager")):
+                if role not in models and chosen[role] not in self.allowed_models:
+                    chosen[role] = chosen[sibling]
+            bad = {r: chosen[r] for r in ROLES if chosen[r] not in self.allowed_models}
+            if bad:
+                raise ModelNotAllowed(f"roles map to models outside the allowlist: {bad}")
         return {"provider": self.provider.name, "models": {r: chosen[r] for r in ROLES}}
 
     @staticmethod
@@ -159,6 +175,8 @@ class ModelGateway:
                 f"run pinned to provider {pins.get('provider')!r}, gateway serves {self.provider.name!r}"
             )
         model = pins["models"][ctx.role]
+        if self.allowed_models is not None and model not in self.allowed_models:
+            raise ModelNotAllowed(f"{ctx.role} is pinned to {model}, which is not in the allowlist")
         request = {**request, "model": model}
         reservation = self.prices.reservation(model, request)
         request_blob = self.blobs.put_json(request)

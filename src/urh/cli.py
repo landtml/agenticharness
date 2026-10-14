@@ -10,6 +10,7 @@ import sys
 from . import notify, server, stats
 from .gateway import AnthropicProvider, Provider
 from .orchestrator import Harness, HarnessConfig
+from .pricing import PriceBook
 from .runtime import Runtime
 from .sessions import Sessions
 from .spec import TaskSpec
@@ -35,12 +36,16 @@ def _provider(name: str) -> Provider:
 
 
 def _harness(args: argparse.Namespace) -> Harness:
+    allowed = [m.strip() for m in (args.allow_models or "").split(",") if m.strip()]
     cfg = HarnessConfig(
         lease_ttl=args.lease_ttl,
         heartbeat_s=args.heartbeat,
         provider_backoff_s=float(os.environ.get("URH_BACKOFF_S", "2.0")),
+        models=json.loads(args.models) if args.models else {},
+        allowed_models=allowed or None,
     )
-    return Harness(args.home, _provider(args.provider), config=cfg)
+    prices = PriceBook.from_json(args.prices) if args.prices else None
+    return Harness(args.home, _provider(args.provider), config=cfg, prices=prices)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -53,6 +58,11 @@ def main(argv: list[str] | None = None) -> int:
         "--models",
         default=os.environ.get("URH_MODELS"),
         help='role-to-model JSON, e.g. \'{"manager": "...", "worker": "..."}\'',
+    )
+    p.add_argument(
+        "--allow-models",
+        default=os.environ.get("URH_ALLOWED_MODELS"),
+        help="comma-separated model ids; no call may use any other (e.g. only claude-haiku-5-5)",
     )
     p.add_argument(
         "--prices",

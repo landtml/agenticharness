@@ -243,3 +243,33 @@ def test_concurrent_call_cap_is_shared_across_threads(tmp_path):
     for t in threads:
         t.join()
     assert peak[0] == 2
+
+
+def test_allowlist_repins_unconfigured_roles_and_refuses_the_rest(tmp_path):
+    from urh.blobs import BlobStore
+    from urh.gateway import CallContext, ModelGateway, ModelNotAllowed
+    from urh.journal import Journal
+    from urh.testing import ScriptedProvider
+
+    j = Journal(str(tmp_path / "j.sqlite"))
+    gw = ModelGateway(
+        j, BlobStore(str(tmp_path / "b")), ScriptedProvider({}), allowed_models=["claude-haiku-5-5"]
+    )
+    # nobody named the manager or escalation model: they follow the worker instead of the Opus defaults
+    assert set(gw.pins_for({})["models"].values()) == {"claude-haiku-5-5"}
+    with pytest.raises(ModelNotAllowed):
+        gw.pins_for({"manager": "claude-opus-5-5"})  # explicitly asking for a forbidden model is an error
+    pins = {"provider": "anthropic", "models": {"worker": "claude-opus-5-5"}}
+    with pytest.raises(ModelNotAllowed):
+        gw.call(CallContext("run_x", 1, 0, 1, "worker", 0), pins, {"messages": []})
+    assert j.model_calls("run_x") == []  # refused before anything was reserved or logged
+
+
+def test_run_pinned_to_a_now_forbidden_model_parks_once(harness_factory, hidden):
+    from conftest import good_script, make_spec
+
+    h = harness_factory(good_script())
+    rid = h.submit(make_spec(hidden))  # pinned with Haiku as the worker
+    h.gateway.allowed_models = frozenset({"some-other-model"})  # the operator tightens the limit afterwards
+    assert h.run(rid) == "parked"
+    assert h.journal.parks(rid)[0]["reason"] == "model_not_allowed"
