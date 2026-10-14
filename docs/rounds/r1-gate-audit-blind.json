@@ -1,0 +1,55 @@
+{
+  "family": "blind (20 mutants written by a Haiku 5.5 agent that never saw the checks)",
+  "examples_only": {
+    "step": "unicode folding",
+    "checks": [
+      "basic",
+      "unicode"
+    ],
+    "reference_accepted": true,
+    "mutants": 20,
+    "accepted": [
+      "ampersand_and",
+      "apostrophe_removed",
+      "camel_split",
+      "collapse_max3",
+      "combining_only_drop",
+      "digit_prefix_n",
+      "dot_preserved",
+      "eszett_expanded",
+      "hyphen_runs_not_collapsed",
+      "latin1_only_decompose",
+      "letter_digit_split",
+      "nbsp_deleted",
+      "nfd_not_nfkd",
+      "space_only_separator",
+      "tab_preserved",
+      "truncate_20_no_restrip",
+      "underscore_kept",
+      "unicode_dash_separator",
+      "word_cap_three"
+    ],
+    "false_accept_rate": 0.95,
+    "interval95": [
+      0.7639,
+      0.9911
+    ]
+  },
+  "with_random_input_checks": {
+    "step": "unicode folding",
+    "checks": [
+      "basic",
+      "unicode",
+      "ascii_property",
+      "unicode_property"
+    ],
+    "reference_accepted": true,
+    "mutants": 20,
+    "accepted": [],
+    "false_accept_rate": 0.0,
+    "interval95": [
+      0.0,
+      0.1611
+    ]
+  }
+}
