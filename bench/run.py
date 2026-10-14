@@ -24,6 +24,8 @@ from urh.orchestrator import Harness, HarnessConfig
 from urh.spec import Check, GateSpec, StepSpec, TaskSpec
 from urh.stats import compute as journal_stats
 
+OUTAGE_WAKE_S = 120.0
+MAX_AUTO_WAKES = 6
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -64,11 +66,23 @@ def hidden_pass(home: str, rid: str, name: str) -> bool:
 
 
 def run_task(name: str, provider: str, home: str, budget: float, planner_effort: str, mode: str) -> dict:
-    h = Harness(home, _provider(provider), config=HarnessConfig(planner_effort=planner_effort))
+    cfg = HarnessConfig(planner_effort=planner_effort, outage_wake_s=OUTAGE_WAKE_S)
+    h = Harness(home, _provider(provider), config=cfg)
     t0 = time.time()
     spec = baseline_spec(name, budget) if mode == "plain" else task_spec(name, budget)
     rid = h.submit(spec)
     status = h.run(rid)
+    wakes = 0
+    # Behave like the daemon: a park that wakes itself (an outage) is retried after its cooldown.
+    while status == "parked" and wakes < MAX_AUTO_WAKES:
+        due = [p["preconditions"].get("wake_at") for p in h.journal.parks(rid, status="open")]
+        if not due or None in due:
+            break
+        time.sleep(max(0.0, max(due) - time.time()) + 1)
+        if rid not in h.wake_due():
+            break
+        wakes += 1
+        status = h.run(rid)
     passed = hidden_pass(home, rid, name)
     calls = h.journal.model_calls(rid)
     events = h.journal.events(rid)
@@ -92,6 +106,7 @@ def run_task(name: str, provider: str, home: str, budget: float, planner_effort:
         "replan_failed": sum(1 for e in events if e["kind"] == "replan_failed"),
         "parks": [p["reason"] for p in h.journal.parks(rid)],
         "attempts": len([c for c in calls if c["role"] == "worker"]),
+        "auto_wakes": wakes,
         "escalations": sum(1 for e in events if e["kind"] == "escalated"),
         "stats": journal_stats(h.journal),
     }

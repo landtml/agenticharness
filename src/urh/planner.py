@@ -423,7 +423,8 @@ def to_step_spec(s: PlanStep, plan: Plan, index: int) -> StepSpec:
         instructions=instructions,
         files=list(s.files),
         checks=list(s.spec_checks),
-        plan_checks=[*s.plan_checks, *regress],
+        plan_checks=list(s.plan_checks),
+        regression_checks=regress,
         effort=s.effort,
     )
 

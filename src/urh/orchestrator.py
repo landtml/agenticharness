@@ -22,7 +22,7 @@ from .blobs import BlobStore
 from .checkpoint import GitCheckpoint
 from .context import step_message, system_blocks
 from .effects import EffectAdapter, EffectGuard, OutboxFileAdapter
-from .gate import ScriptGate, Verdict
+from .gate import ScriptGate, Verdict, default_vetter
 from .gateway import DEFAULT_MODELS, ModelGateway, Provider, ProviderDown
 from .journal import SCHEMA_VERSION, BudgetExceeded, Journal, LeaseLost
 from .judge import LLMJudge
@@ -57,6 +57,7 @@ class HarnessConfig:
     # Policies that resolve would-be parks without a person. A park is a failure mode, not a normal path.
     auto_topup_usd: float = 0.0  # budget added automatically when a run runs dry ...
     max_auto_topups: int = 0  # ... at most this many times per run
+    vet_plan_checks: bool = True  # screen planner-written checks before they may pass a step
     outage_wake_s: float = 300.0  # an outage park wakes itself after this long
     use_judge: bool = True  # a model judge decides steps no script check covers
     escalate: bool = True  # one attempt on the escalation model before repairs_exhausted parks
@@ -111,6 +112,7 @@ class Harness:
         self.llm_manager = LLMManager(self.gateway, effort=self.config.manager_effort)
         self.planner = PlanningManager(self.gateway, effort=self.config.planner_effort)
         self.judge = LLMJudge(self.gateway)
+        self.vetter = default_vetter() if self.config.vet_plan_checks else None
 
     # ------------------------------------------------------------------ admission
     def submit(self, spec: TaskSpec, dedupe_key: str | None = None, budget_usd: float | None = None) -> str:
@@ -460,7 +462,7 @@ class Harness:
                 self.journal.discard_proposed_effects(run_id, epoch, i)
                 continue
 
-            verdict = ScriptGate(spec.gate).evaluate(ckpt, verified, commit, step)
+            verdict = ScriptGate(spec.gate, vetter=self.vetter).evaluate(ckpt, verified, commit, step)
             if verdict.status == "unsure" and self.config.use_judge:
                 try:
                     verdict = self.judge.evaluate(
@@ -484,6 +486,10 @@ class Harness:
                 continue
             if verdict.status == "unsure":
                 self.journal.discard_proposed_effects(run_id, epoch, i)
+                # Nothing can decide the step as written: the planner rewrites it (better checks) first.
+                unsure = [{"verdict": {"failures": [verdict.summary, *verdict.failures]}}]
+                if self._replan(manager, run_id, epoch, pins, spec, i, unsure, ckpt, verified):
+                    continue
                 return self._park(
                     run_id,
                     epoch,

@@ -272,4 +272,30 @@ def test_a_step_that_breaks_an_earlier_step_fails_its_gate(make, hidden):
     assert h.run(rid) == "parked"
     first = h.journal.attempts(rid, 1)[0]
     assert first["status"] in ("fail", "superseded")
-    assert any(f.startswith("plan2") for f in first["verdict"]["failures"])  # the regression check
+    assert any(f.startswith("regression1") for f in first["verdict"]["failures"])
+
+
+def test_untrusted_plan_checks_send_the_step_back_to_the_planner(make, hidden):
+    """A step decided only by planner checks the vetter cannot trust is replanned, not passed or parked."""
+    first = mplan([pstep("add", spec_checks=[]), pstep("mul", spec_checks=["add", "mul"])])
+    better = mplan(
+        [
+            pstep("add", instructions="Write add.py (v2)", spec_checks=[]),
+            pstep("mul", spec_checks=["add", "mul"]),
+        ]
+    )
+    script = steps_script()
+    script["by_marker"] = {"(v2)": [[{"write": "add.py", "content": ADD_PY}], [{"finish": "add v2"}]]}
+    h, p = make(script, [first, better], use_judge=False)
+    calls = []
+
+    def vetter(checks, parent_tree, candidate_tree, step_files, worker_written=()):
+        calls.append(list(checks))
+        return ("unsure", {}) if len(calls) == 1 else ("pass", {})
+
+    h.vetter = vetter
+    rid = h.submit(make_spec(hidden, steps=None))
+    assert h.run(rid) == "done"
+    assert [e["why"] for e in h.journal.events(rid) if e["kind"] == "plan"] == ["plan", "replan"]
+    assert "cannot tell a broken step" in p.planner_prompts[1]
+    assert len(calls) == 2  # the mul step has spec checks, so its plan checks are not vetted

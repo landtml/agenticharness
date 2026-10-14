@@ -12,6 +12,7 @@ import os
 import re
 import shutil
 import tempfile
+from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
@@ -65,9 +66,23 @@ def extract_failures(stdout: str, stderr: str) -> list[str]:
     return seen[:MAX_FAILURES]
 
 
+# vetter(checks, parent_tree, candidate_tree, step_files, worker_written=...) -> (status, details)
+Vetter = Callable[..., tuple[str, dict[str, Any]]]
+
+
+def default_vetter() -> Vetter | None:
+    """The gate package's plan-check vetting, when it is installed."""
+    try:
+        from urh_gate.plancheck import gate_step  # type: ignore[import-not-found]
+    except ImportError:
+        return None
+    return gate_step
+
+
 class ScriptGate:
-    def __init__(self, spec: GateSpec):
+    def __init__(self, spec: GateSpec, vetter: Vetter | None = None):
         self.spec = spec
+        self.vetter = vetter
 
     def _selected(self, step: StepSpec) -> list[Any]:
         if step.checks is None:
@@ -81,7 +96,41 @@ class ScriptGate:
             for n, cmd in enumerate(step.plan_checks)
             if cmd.strip()
         ]
+        chosen += [
+            Check(f"regression{n + 1}", ["/bin/bash", "-c", cmd])
+            for n, cmd in enumerate(step.regression_checks)
+            if cmd.strip()
+        ]
         return chosen
+
+    def _vet(
+        self, ckpt: GitCheckpoint, parent: str, tree: str, tmp: str, step: StepSpec, changed: list[str]
+    ) -> Verdict | None:
+        """A step decided only by planner-written checks passes only if one of them is trustworthy.
+
+        The vetter re-runs each check against the parent tree, sabotaged copies and mutants of the
+        step's files; a check that cannot tell them apart from the candidate is not evidence.
+        """
+        own = [c for c in step.plan_checks if c.strip()]
+        if self.vetter is None or not own or step.checks is None or step.checks:
+            return None
+        parent_tree = os.path.join(tmp, "parent")
+        ckpt.export(parent, parent_tree)
+        if self.spec.hidden_dir:
+            shutil.copytree(self.spec.hidden_dir, os.path.join(parent_tree, "_hidden"), dirs_exist_ok=True)
+        try:
+            status, vettings = self.vetter(own, parent_tree, tree, list(step.files), worker_written=changed)
+        except Exception as e:  # a broken vetter must not pass a step
+            return Verdict("unsure", f"plan check vetting failed: {type(e).__name__}")
+        if status == "pass":
+            return None
+        reasons = [
+            f"plan{n + 1}: " + "; ".join(getattr(vettings.get(c), "reasons", []) or ["not trusted"])
+            for n, c in enumerate(own)
+        ]
+        return Verdict(
+            "unsure", "the step's plan checks cannot tell a broken step from a working one", failures=reasons
+        )
 
     def evaluate(self, ckpt: GitCheckpoint, parent: str, candidate: str, step: StepSpec) -> Verdict:
         changed = ckpt.changed_paths(parent, candidate)
@@ -117,7 +166,12 @@ class ScriptGate:
                     [] if passed else (["timed out"] if r.timed_out else extract_failures(r.stdout, r.stderr))
                 )
                 results.append(CheckResult(check.name, passed, r.returncode, r.timed_out, failures))
-        failed = [c for c in results if not c.passed]
+            failed = [c for c in results if not c.passed]
+            if not failed:
+                vetted = self._vet(ckpt, parent, tree, tmp, step, changed)
+                if vetted is not None:
+                    vetted.checks = results
+                    return vetted
         if not failed:
             return Verdict("pass", f"{len(results)} check(s) passed", checks=results)
         flat = [f"{c.name}: {f}" for c in failed for f in c.failures][:MAX_FAILURES]
