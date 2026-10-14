@@ -190,6 +190,17 @@ class Harness:
             self.journal.set_verified_commit(run_id, epoch, root)
         verified = self.journal.get_run(run_id).verified_commit
         assert verified is not None
+        head = ckpt.verified_head()
+        if head != verified:
+            # The ref moved past the journal (crash between promote and complete_step). Only a commit
+            # the gate passed for the current step may stay ahead; anything else is rolled back.
+            current = self.journal.get_run(run_id).step_index
+            passed = {
+                a["commit_sha"] for a in self.journal.attempts(run_id, current) if a["status"] == "pass"
+            }
+            if head not in passed:
+                ckpt.force_ref(verified)
+                self.journal.event(run_id, epoch, "ref_rolled_back", head=head, verified=verified)
 
         # Parked answers are claimed once, and only used if their premise still holds.
         answers: list[str] = []
@@ -271,6 +282,17 @@ class Harness:
             step = StepSpec.from_dict(step_dict)
 
             prior = self.journal.attempts(run_id, i)
+            passed = [a for a in prior if a["status"] == "pass" and a.get("commit_sha")]
+            if passed:
+                # The gate already passed this step but we crashed before the journal advanced.
+                # Finish committing it instead of redoing verified work.
+                commit = passed[-1]["commit_sha"]
+                self.journal.event(run_id, epoch, "recovered_pass", step_index=i, commit=commit)
+                parked = self._commit_pass(run_id, epoch, ckpt, i, step, commit, verified, approved)
+                verified = commit
+                if parked:
+                    return parked
+                continue
             failed = [a for a in prior if a["status"] == "fail"]
             if len(failed) > spec.max_repairs:
                 return self._park(
@@ -377,26 +399,45 @@ class Harness:
                     {"candidate": commit},
                 )
 
-            # pass: record spec-declared effects, commit the checkpoint, advance, then fire the outbox.
-            for k, eff in enumerate(step.effects):
-                payload = dict(eff.get("payload", {}))
-                if step.irreversible or eff.get("irreversible"):
-                    payload["irreversible"] = True
-                self.guard.propose(run_id, epoch, i, SPEC_EFFECT_BASE + k, eff["kind"], payload)
-            ckpt.promote(commit, verified)
-            self.journal.complete_step(run_id, epoch, i, commit)
+            parked = self._commit_pass(run_id, epoch, ckpt, i, step, commit, verified, approved)
             verified = commit
-            flushed = self.guard.flush(run_id, epoch, i, approved)
-            if flushed.parked:
-                return self._park(
-                    run_id,
-                    epoch,
-                    i,
-                    "effect",
-                    "Approve these outward actions? " + "; ".join(r for _, r in flushed.parked),
-                    verified,
-                    {"effect_keys": [k for k, _ in flushed.parked]},
-                )
+            if parked:
+                return parked
+
+    def _commit_pass(
+        self,
+        run_id: str,
+        epoch: int,
+        ckpt: GitCheckpoint,
+        i: int,
+        step: StepSpec,
+        commit: str,
+        verified: str,
+        approved: set[str],
+    ) -> str | None:
+        """Record spec-declared effects, promote the checkpoint, advance the journal, then fire the outbox.
+
+        Every part is idempotent, so a crash anywhere in here is finished by the next process.
+        """
+        for k, eff in enumerate(step.effects):
+            payload = dict(eff.get("payload", {}))
+            if step.irreversible or eff.get("irreversible"):
+                payload["irreversible"] = True
+            self.guard.propose(run_id, epoch, i, SPEC_EFFECT_BASE + k, eff["kind"], payload)
+        ckpt.promote(commit, verified)
+        self.journal.complete_step(run_id, epoch, i, commit)
+        flushed = self.guard.flush(run_id, epoch, i, approved)
+        if flushed.parked:
+            return self._park(
+                run_id,
+                epoch,
+                i,
+                "effect",
+                "Approve these outward actions? " + "; ".join(r for _, r in flushed.parked),
+                commit,
+                {"effect_keys": [k for k, _ in flushed.parked]},
+            )
+        return None
 
 
 def _ls_tree(ckpt: GitCheckpoint, commit: str) -> list[str]:

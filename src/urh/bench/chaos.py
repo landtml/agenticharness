@@ -81,6 +81,16 @@ def build_task(workdir: str, steps: int, rng: random.Random) -> tuple[dict[str, 
     return spec, {"steps": script_steps}
 
 
+FAULT_POINTS = (
+    "effect_delivered",
+    "before_promote",
+    "before_complete_step",
+    "after_complete_step",
+    "after_gate",
+    "after_verdict",
+)
+
+
 def run_trial(
     seed: int,
     steps: int,
@@ -88,6 +98,7 @@ def run_trial(
     effect_delay: float,
     max_kills: int,
     kill_window: tuple[float, float],
+    fault: str | None = None,
 ) -> dict[str, Any]:
     rng = random.Random(seed)
     with tempfile.TemporaryDirectory(prefix="urh-chaos-") as work:
@@ -101,6 +112,9 @@ def run_trial(
         h.journal.close()
 
         kills, status, t0 = 0, "", time.time()
+        env = dict(os.environ)
+        if fault:
+            env.update({"URH_FAULT": fault, "URH_FAULT_MARKER": os.path.join(work, "fault.marker")})
         while True:
             proc = subprocess.Popen(
                 [
@@ -116,6 +130,7 @@ def run_trial(
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
+                env=env,
             )
             if kills < max_kills:
                 try:
@@ -129,7 +144,13 @@ def run_trial(
                     continue
             else:
                 out, err = proc.communicate(timeout=300)
-                status = out.strip() or f"error: {err[-300:]}"
+                status = out.strip()
+            if proc.returncode == -signal.SIGKILL and not status:
+                kills += 1  # a fault point killed the process
+                time.sleep(lease_ttl + 0.2)
+                continue
+            if not status:
+                status = f"error: exit {proc.returncode}"
             if status in ("done", "failed", "parked") or status.startswith("error"):
                 break
 
@@ -147,10 +168,17 @@ def run_trial(
             passed = [a for a in step_attempts if a["status"] == "pass"]
             if passed:
                 redone_steps += sum(1 for a in step_attempts if a["attempt"] > passed[0]["attempt"])
-        dispatch_events: dict[str, int] = {}
+        dispatch_epoch: dict[str, int] = {}
+        recoveries = 0
         for e in j.events(run_id):
             if e["kind"] == "effect_dispatching":
-                dispatch_events[e["key"]] = dispatch_events.get(e["key"], 0) + 1
+                dispatch_epoch.setdefault(e["key"], e["epoch"])
+            elif (
+                e["kind"] == "effect_done"
+                and e["key"] in dispatch_epoch
+                and e["epoch"] != dispatch_epoch[e["key"]]
+            ):
+                recoveries += 1
         log_path = os.path.join(home, "outbox", "deliveries.log")
         deliveries = open(log_path).read().split() if os.path.exists(log_path) else []
         files_ok = False
@@ -164,6 +192,7 @@ def run_trial(
             files_ok = all(f"f{i}.py" in tree for i in range(steps))
         return {
             "seed": seed,
+            "fault": fault,
             "status": run.status,
             "kills": kills,
             "seconds": round(time.time() - t0, 2),
@@ -172,7 +201,7 @@ def run_trial(
             "duplicate_effects": len(deliveries) - len(set(deliveries)),
             "redone_verified_steps": redone_steps,
             # effects whose dispatch was interrupted by a kill and settled later by read-back or keyed resend
-            "effect_crash_recoveries": sum(1 for n in dispatch_events.values() if n > 1),
+            "effect_crash_recoveries": recoveries,
             "worker_calls": len(calls),
             "redone_calls": redone_calls,
             "lost_calls": sum(1 for c in j.model_calls(run_id) if c["status"] == "lost"),
@@ -203,12 +232,18 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--lease-ttl", type=float, default=1.0)
     p.add_argument("--effect-delay", type=float, default=0.2)
     p.add_argument("--max-kills", type=int, default=3)
+    p.add_argument("--faults", action="store_true", help="also run one trial per deterministic fault point")
     p.add_argument("--out")
     args = p.parse_args(argv)
     trials = [
         run_trial(args.seed + i, args.steps, args.lease_ttl, args.effect_delay, args.max_kills, (0.3, 2.5))
         for i in range(args.trials)
     ]
+    if args.faults:
+        trials += [
+            run_trial(args.seed + 1000 + k, args.steps, args.lease_ttl, args.effect_delay, 0, (0, 0), fault=f)
+            for k, f in enumerate(FAULT_POINTS)
+        ]
     report = {"summary": summarize(trials), "trials": trials}
     text = json.dumps(report, indent=2)
     if args.out:
