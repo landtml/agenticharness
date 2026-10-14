@@ -1,0 +1,243 @@
+{
+  "summary": {
+    "tasks": 6,
+    "verified_rate": 0.333,
+    "park_rate": 0.0,
+    "false_done": 4,
+    "crashes": 0,
+    "replans": 0,
+    "cost_usd": 0.0842,
+    "cost_per_verified": 0.0421,
+    "planner_share": 0.0
+  },
+  "runs": [
+    {
+      "task": "iniparse",
+      "mode": "plain",
+      "status": "done",
+      "hidden_pass": true,
+      "false_done": false,
+      "seconds": 39.8,
+      "steps": 1,
+      "cost_usd": 0.0063,
+      "cost_by_role": {
+        "worker": 0.0063
+      },
+      "planner_share": 0.0,
+      "plan_calls": [],
+      "replans": 0,
+      "replan_failed": 0,
+      "parks": [],
+      "attempts": 2,
+      "escalations": 0,
+      "stats": {
+        "runs": 1,
+        "by_status": {
+          "done": 1
+        },
+        "human_touches": 0,
+        "human_touches_per_run": 0.0,
+        "park_rate": 0.0,
+        "headless_done": 1,
+        "auto_resolved_parks": 0,
+        "parks_by_reason": {},
+        "cost_per_done_usd": 0.006273,
+        "calls_per_done": 2.0,
+        "calls_by_role": {
+          "worker": 2
+        },
+        "cache_hit_ratio": 0.9996
+      }
+    },
+    {
+      "task": "kvstore",
+      "mode": "plain",
+      "status": "done",
+      "hidden_pass": true,
+      "false_done": false,
+      "seconds": 289.6,
+      "steps": 1,
+      "cost_usd": 0.0339,
+      "cost_by_role": {
+        "worker": 0.0339
+      },
+      "planner_share": 0.0,
+      "plan_calls": [],
+      "replans": 0,
+      "replan_failed": 0,
+      "parks": [],
+      "attempts": 5,
+      "escalations": 0,
+      "stats": {
+        "runs": 1,
+        "by_status": {
+          "done": 1
+        },
+        "human_touches": 0,
+        "human_touches_per_run": 0.0,
+        "park_rate": 0.0,
+        "headless_done": 1,
+        "auto_resolved_parks": 0,
+        "parks_by_reason": {},
+        "cost_per_done_usd": 0.033949,
+        "calls_per_done": 5.0,
+        "calls_by_role": {
+          "worker": 5
+        },
+        "cache_hit_ratio": 0.9997
+      }
+    },
+    {
+      "task": "minijson",
+      "mode": "plain",
+      "status": "done",
+      "hidden_pass": false,
+      "false_done": true,
+      "seconds": 181.9,
+      "steps": 1,
+      "cost_usd": 0.0364,
+      "cost_by_role": {
+        "worker": 0.0364
+      },
+      "planner_share": 0.0,
+      "plan_calls": [],
+      "replans": 0,
+      "replan_failed": 0,
+      "parks": [],
+      "attempts": 4,
+      "escalations": 0,
+      "stats": {
+        "runs": 1,
+        "by_status": {
+          "done": 1
+        },
+        "human_touches": 0,
+        "human_touches_per_run": 0.0,
+        "park_rate": 0.0,
+        "headless_done": 1,
+        "auto_resolved_parks": 0,
+        "parks_by_reason": {},
+        "cost_per_done_usd": 0.036442,
+        "calls_per_done": 4.0,
+        "calls_by_role": {
+          "worker": 4
+        },
+        "cache_hit_ratio": 0.9996
+      }
+    },
+    {
+      "task": "rpn",
+      "mode": "plain",
+      "status": "done",
+      "hidden_pass": false,
+      "false_done": true,
+      "seconds": 32.4,
+      "steps": 1,
+      "cost_usd": 0.0048,
+      "cost_by_role": {
+        "worker": 0.0048
+      },
+      "planner_share": 0.0,
+      "plan_calls": [],
+      "replans": 0,
+      "replan_failed": 0,
+      "parks": [],
+      "attempts": 1,
+      "escalations": 0,
+      "stats": {
+        "runs": 1,
+        "by_status": {
+          "done": 1
+        },
+        "human_touches": 0,
+        "human_touches_per_run": 0.0,
+        "park_rate": 0.0,
+        "headless_done": 1,
+        "auto_resolved_parks": 0,
+        "parks_by_reason": {},
+        "cost_per_done_usd": 0.004756,
+        "calls_per_done": 1.0,
+        "calls_by_role": {
+          "worker": 1
+        },
+        "cache_hit_ratio": 0.9996
+      }
+    },
+    {
+      "task": "slugify",
+      "mode": "plain",
+      "status": "done",
+      "hidden_pass": false,
+      "false_done": true,
+      "seconds": 13.2,
+      "steps": 1,
+      "cost_usd": 0.0021,
+      "cost_by_role": {
+        "worker": 0.0021
+      },
+      "planner_share": 0.0,
+      "plan_calls": [],
+      "replans": 0,
+      "replan_failed": 0,
+      "parks": [],
+      "attempts": 2,
+      "escalations": 0,
+      "stats": {
+        "runs": 1,
+        "by_status": {
+          "done": 1
+        },
+        "human_touches": 0,
+        "human_touches_per_run": 0.0,
+        "park_rate": 0.0,
+        "headless_done": 1,
+        "auto_resolved_parks": 0,
+        "parks_by_reason": {},
+        "cost_per_done_usd": 0.002144,
+        "calls_per_done": 2.0,
+        "calls_by_role": {
+          "worker": 2
+        },
+        "cache_hit_ratio": 0.9996
+      }
+    },
+    {
+      "task": "todo_cli",
+      "mode": "plain",
+      "status": "done",
+      "hidden_pass": false,
+      "false_done": true,
+      "seconds": 10.8,
+      "steps": 1,
+      "cost_usd": 0.0007,
+      "cost_by_role": {
+        "worker": 0.0007
+      },
+      "planner_share": 0.0,
+      "plan_calls": [],
+      "replans": 0,
+      "replan_failed": 0,
+      "parks": [],
+      "attempts": 1,
+      "escalations": 0,
+      "stats": {
+        "runs": 1,
+        "by_status": {
+          "done": 1
+        },
+        "human_touches": 0,
+        "human_touches_per_run": 0.0,
+        "park_rate": 0.0,
+        "headless_done": 1,
+        "auto_resolved_parks": 0,
+        "parks_by_reason": {},
+        "cost_per_done_usd": 0.000715,
+        "calls_per_done": 1.0,
+        "calls_by_role": {
+          "worker": 1
+        },
+        "cache_hit_ratio": 0.9996
+      }
+    }
+  ]
+}

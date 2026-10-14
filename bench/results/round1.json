@@ -1,0 +1,273 @@
+{
+  "summary": {
+    "tasks": 6,
+    "verified_rate": 0.333,
+    "park_rate": 0.667,
+    "false_done": 0,
+    "crashes": 0,
+    "replans": 0,
+    "cost_usd": 1.2044,
+    "cost_per_verified": 0.6022,
+    "planner_share": 0.425
+  },
+  "runs": [
+    {
+      "task": "iniparse",
+      "mode": "harness",
+      "status": "done",
+      "hidden_pass": true,
+      "false_done": false,
+      "seconds": 83.9,
+      "steps": 2,
+      "cost_usd": 0.1016,
+      "cost_by_role": {
+        "manager": 0.0893,
+        "worker": 0.0123
+      },
+      "planner_share": 0.879,
+      "plan_calls": [
+        "plan"
+      ],
+      "replans": 0,
+      "replan_failed": 0,
+      "parks": [],
+      "attempts": 4,
+      "escalations": 0,
+      "stats": {
+        "runs": 1,
+        "by_status": {
+          "done": 1
+        },
+        "human_touches": 0,
+        "human_touches_per_run": 0.0,
+        "park_rate": 0.0,
+        "headless_done": 1,
+        "auto_resolved_parks": 0,
+        "parks_by_reason": {},
+        "cost_per_done_usd": 0.101612,
+        "calls_per_done": 5.0,
+        "calls_by_role": {
+          "manager": 1,
+          "worker": 4
+        },
+        "cache_hit_ratio": 0.9996
+      }
+    },
+    {
+      "task": "kvstore",
+      "mode": "harness",
+      "status": "done",
+      "hidden_pass": true,
+      "false_done": false,
+      "seconds": 438.3,
+      "steps": 4,
+      "cost_usd": 0.304,
+      "cost_by_role": {
+        "manager": 0.2027,
+        "worker": 0.1013
+      },
+      "planner_share": 0.667,
+      "plan_calls": [
+        "plan"
+      ],
+      "replans": 0,
+      "replan_failed": 0,
+      "parks": [],
+      "attempts": 22,
+      "escalations": 0,
+      "stats": {
+        "runs": 1,
+        "by_status": {
+          "done": 1
+        },
+        "human_touches": 0,
+        "human_touches_per_run": 0.0,
+        "park_rate": 0.0,
+        "headless_done": 1,
+        "auto_resolved_parks": 0,
+        "parks_by_reason": {},
+        "cost_per_done_usd": 0.303994,
+        "calls_per_done": 23.0,
+        "calls_by_role": {
+          "manager": 1,
+          "worker": 22
+        },
+        "cache_hit_ratio": 0.9997
+      }
+    },
+    {
+      "task": "minijson",
+      "mode": "harness",
+      "status": "parked",
+      "hidden_pass": true,
+      "false_done": false,
+      "seconds": 1559.7,
+      "steps": 4,
+      "cost_usd": 0.7988,
+      "cost_by_role": {
+        "manager": 0.2199,
+        "worker": 0.2704,
+        "escalation": 0.3085
+      },
+      "planner_share": 0.275,
+      "plan_calls": [
+        "plan"
+      ],
+      "replans": 0,
+      "replan_failed": 0,
+      "parks": [
+        "outage"
+      ],
+      "attempts": 50,
+      "escalations": 1,
+      "stats": {
+        "runs": 1,
+        "by_status": {
+          "parked": 1
+        },
+        "human_touches": 1,
+        "human_touches_per_run": 1.0,
+        "park_rate": 1.0,
+        "headless_done": 0,
+        "auto_resolved_parks": 0,
+        "parks_by_reason": {
+          "outage": 1
+        },
+        "cost_per_done_usd": null,
+        "calls_per_done": null,
+        "calls_by_role": {
+          "manager": 1,
+          "worker": 50,
+          "escalation": 4
+        },
+        "cache_hit_ratio": 0.9998
+      }
+    },
+    {
+      "task": "rpn",
+      "mode": "harness",
+      "status": "parked",
+      "hidden_pass": false,
+      "false_done": false,
+      "seconds": 291.9,
+      "steps": 0,
+      "cost_usd": 0.0,
+      "cost_by_role": {
+        "manager": 0.0
+      },
+      "planner_share": 0.0,
+      "plan_calls": [],
+      "replans": 0,
+      "replan_failed": 0,
+      "parks": [
+        "outage"
+      ],
+      "attempts": 0,
+      "escalations": 0,
+      "stats": {
+        "runs": 1,
+        "by_status": {
+          "parked": 1
+        },
+        "human_touches": 1,
+        "human_touches_per_run": 1.0,
+        "park_rate": 1.0,
+        "headless_done": 0,
+        "auto_resolved_parks": 0,
+        "parks_by_reason": {
+          "outage": 1
+        },
+        "cost_per_done_usd": null,
+        "calls_per_done": null,
+        "calls_by_role": {
+          "manager": 1
+        },
+        "cache_hit_ratio": null
+      }
+    },
+    {
+      "task": "slugify",
+      "mode": "harness",
+      "status": "parked",
+      "hidden_pass": false,
+      "false_done": false,
+      "seconds": 292.0,
+      "steps": 0,
+      "cost_usd": 0.0,
+      "cost_by_role": {
+        "manager": 0.0
+      },
+      "planner_share": 0.0,
+      "plan_calls": [],
+      "replans": 0,
+      "replan_failed": 0,
+      "parks": [
+        "outage"
+      ],
+      "attempts": 0,
+      "escalations": 0,
+      "stats": {
+        "runs": 1,
+        "by_status": {
+          "parked": 1
+        },
+        "human_touches": 1,
+        "human_touches_per_run": 1.0,
+        "park_rate": 1.0,
+        "headless_done": 0,
+        "auto_resolved_parks": 0,
+        "parks_by_reason": {
+          "outage": 1
+        },
+        "cost_per_done_usd": null,
+        "calls_per_done": null,
+        "calls_by_role": {
+          "manager": 1
+        },
+        "cache_hit_ratio": null
+      }
+    },
+    {
+      "task": "todo_cli",
+      "mode": "harness",
+      "status": "parked",
+      "hidden_pass": false,
+      "false_done": false,
+      "seconds": 291.7,
+      "steps": 0,
+      "cost_usd": 0.0,
+      "cost_by_role": {
+        "manager": 0.0
+      },
+      "planner_share": 0.0,
+      "plan_calls": [],
+      "replans": 0,
+      "replan_failed": 0,
+      "parks": [
+        "outage"
+      ],
+      "attempts": 0,
+      "escalations": 0,
+      "stats": {
+        "runs": 1,
+        "by_status": {
+          "parked": 1
+        },
+        "human_touches": 1,
+        "human_touches_per_run": 1.0,
+        "park_rate": 1.0,
+        "headless_done": 0,
+        "auto_resolved_parks": 0,
+        "parks_by_reason": {
+          "outage": 1
+        },
+        "cost_per_done_usd": null,
+        "calls_per_done": null,
+        "calls_by_role": {
+          "manager": 1
+        },
+        "cache_hit_ratio": null
+      }
+    }
+  ]
+}

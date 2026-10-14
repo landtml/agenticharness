@@ -53,6 +53,12 @@ class StepSpec:
     checks: list[str] | None = None  # names of gate checks; None means all
     effects: list[dict[str, Any]] = field(default_factory=list)  # outward actions after the step verifies
     irreversible: bool = False
+    # Shell commands written by the planner (never the worker) that also gate this step. They let
+    # intermediate milestone steps verify before the spec's own checks can apply.
+    plan_checks: list[str] = field(default_factory=list)
+    effort: str | None = None  # worker effort for the first attempt; repairs raise it
+    # Earlier steps' plan checks, rerun so a later step cannot break verified work (never vetted again).
+    regression_checks: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -62,6 +68,9 @@ class StepSpec:
             "checks": self.checks,
             "effects": self.effects,
             "irreversible": self.irreversible,
+            "plan_checks": self.plan_checks,
+            "effort": self.effort,
+            "regression_checks": self.regression_checks,
         }
 
     @classmethod
@@ -73,6 +82,9 @@ class StepSpec:
             checks=d.get("checks"),
             effects=list(d.get("effects", [])),
             irreversible=bool(d.get("irreversible", False)),
+            plan_checks=list(d.get("plan_checks", [])),
+            effort=d.get("effort"),
+            regression_checks=list(d.get("regression_checks", [])),
         )
 
 

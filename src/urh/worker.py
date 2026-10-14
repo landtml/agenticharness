@@ -171,6 +171,7 @@ class Worker:
         workspace: Workspace,
         propose: ProposeFn,
         max_turns: int,
+        effort: str | None = None,
         role: str = "worker",
     ) -> WorkerOutcome:
         messages: list[dict[str, Any]] = [{"role": "user", "content": first_message}]
@@ -186,7 +187,7 @@ class Worker:
                     "system": system,
                     "tools": TOOLS,
                     "messages": messages,
-                    "effort": self.effort,
+                    "effort": effort or self.effort,
                 },
             )
             stop = resp.stop_reason

@@ -10,6 +10,7 @@ from the journal and the last verified commit (durability level D1).
 from __future__ import annotations
 
 import os
+import re
 import socket
 import threading
 import time
@@ -22,11 +23,12 @@ from .blobs import BlobStore
 from .checkpoint import GitCheckpoint
 from .context import step_message, system_blocks
 from .effects import EffectAdapter, EffectGuard, OutboxFileAdapter
-from .gate import ScriptGate, Verdict
+from .gate import ScriptGate, Verdict, default_vetter
 from .gateway import DEFAULT_MODELS, ModelGateway, Provider, ProviderDown
 from .journal import SCHEMA_VERSION, BudgetExceeded, Journal, LeaseLost
 from .judge import LLMJudge
 from .manager import CodeManager, LLMManager, Manager
+from .planner import PlanningManager
 from .pricing import PriceBook
 from .spec import StepSpec, TaskSpec
 from .worker import Worker, Workspace
@@ -46,6 +48,9 @@ class HarnessConfig:
     global_spend_cap_usd: float | None = None
     worker_effort: str = "medium"
     manager_effort: str = "medium"
+    manager: str = "planner"  # planner: plan milestones, expand, replan | stepwise: one manager call per step
+    planner_effort: str = "medium"  # plan and expand; replans run at planner_replan_effort
+    planner_replan_effort: str = "high"
     provider_retries: int = 3
     provider_backoff_s: float = 2.0
     command_timeout: float = 60.0
@@ -54,6 +59,7 @@ class HarnessConfig:
     # Policies that resolve would-be parks without a person. A park is a failure mode, not a normal path.
     auto_topup_usd: float = 0.0  # budget added automatically when a run runs dry ...
     max_auto_topups: int = 0  # ... at most this many times per run
+    vet_plan_checks: bool = True  # screen planner-written checks before they may pass a step
     outage_wake_s: float = 300.0  # an outage park wakes itself after this long
     use_judge: bool = True  # a model judge decides steps no script check covers
     max_concurrent_calls: int | None = None  # provider calls in flight at once, across every run here
@@ -111,7 +117,11 @@ class Harness:
         self.guard = EffectGuard(self.journal, adapters)
         self.worker = Worker(self.gateway, effort=self.config.worker_effort)
         self.llm_manager = LLMManager(self.gateway, effort=self.config.manager_effort)
+        self.planner = PlanningManager(
+            self.gateway, effort=self.config.planner_effort, replan_effort=self.config.planner_replan_effort
+        )
         self.judge = LLMJudge(self.gateway)
+        self.vetter = default_vetter() if self.config.vet_plan_checks else None
 
     # ------------------------------------------------------------------ admission
     def submit(self, spec: TaskSpec, dedupe_key: str | None = None, budget_usd: float | None = None) -> str:
@@ -212,6 +222,49 @@ class Harness:
         self.journal.park(run_id, epoch, step_index, reason, question, pre)
         return "parked"
 
+    def _replan(
+        self,
+        manager: Manager,
+        run_id: str,
+        epoch: int,
+        pins: dict[str, Any],
+        spec: TaskSpec,
+        i: int,
+        failed: list[dict[str, Any]],
+        ckpt: GitCheckpoint,
+        verified: str,
+    ) -> bool:
+        """Ask a planning manager for a different step N instead of parking. False when it can't or won't."""
+        replan = getattr(manager, "replan", None)
+        if replan is None:
+            return False
+        failures = [f for a in failed[-2:] for f in ((a.get("verdict") or {}).get("failures") or [])]
+        try:
+            step = replan(
+                run_id=run_id,
+                epoch=epoch,
+                pins=pins,
+                spec=spec,
+                step_index=i,
+                failures=failures,
+                files=_ls_tree(ckpt, verified),
+            )
+        except (BudgetExceeded, ProviderDown, ValueError) as e:
+            self.journal.event(run_id, epoch, "replan_failed", step_index=i, error=repr(e)[:300])
+            return False
+        if step is None:
+            return False
+        self.journal.replan_step(run_id, epoch, i, step, manager.source)
+        return True
+
+    def _exhausted_before(self, run_id: str, i: int) -> bool:
+        """True once an earlier step on this run used up its repairs: a second struggling step means the
+        plan, not the worker, is the likelier problem."""
+        return any(
+            e["kind"] in ("escalated", "step_replanned") and e.get("step_index", i) < i
+            for e in self.journal.events(run_id)
+        )
+
     def _standing_requirements(self, run_id: str, spec: TaskSpec, i: int) -> list[str]:
         """What the judge must keep enforcing: the goal, constraints, and every earlier step's instructions."""
         reqs = [f"Goal: {spec.goal}", *(f"Constraint: {c}" for c in spec.constraints)]
@@ -222,7 +275,9 @@ class Harness:
         return reqs
 
     def _manager_for(self, spec: TaskSpec) -> Manager:
-        return CodeManager() if spec.steps is not None else self.llm_manager
+        if spec.steps is not None:
+            return CodeManager()
+        return self.planner if self.config.manager == "planner" else self.llm_manager
 
     def _drive(self, run_id: str, epoch: int, ckpt: GitCheckpoint) -> str:
         run = self.journal.get_run(run_id)
@@ -330,6 +385,15 @@ class Harness:
                     return self._park(
                         run_id, epoch, i, "outage", f"Model provider unavailable: {e}", verified
                     )
+                except ValueError as e:  # the manager's answer could not be used (bad JSON, rejected plan)
+                    return self._park(
+                        run_id,
+                        epoch,
+                        i,
+                        "plan",
+                        f"The manager could not plan step {i + 1}: {e}"[:1500],
+                        verified,
+                    )
                 step_dict = self.journal.plan_step(run_id, epoch, i, proposed, manager.source)
             if step_dict.get("done"):
                 self.journal.set_status(run_id, epoch, "done", None)
@@ -350,12 +414,22 @@ class Harness:
                 continue
             failed = [a for a in prior if a["status"] == "fail"]
             role = "worker"
-            if len(failed) > spec.max_repairs and self._may_escalate(run_id, i, pins, len(failed), spec):
-                role = "escalation"
-                self.journal.event(
-                    run_id, epoch, "escalated", step_index=i, model=pins["models"]["escalation"]
-                )
-            elif len(failed) > spec.max_repairs:
+            if len(failed) > spec.max_repairs:
+                # A wrong plan goes straight back to the planner; a right plan with a weak worker escalates
+                # first. Either way, parking is the last resort.
+                shaped = plan_shaped(failed) or self._exhausted_before(run_id, i)
+                if shaped and self._replan(manager, run_id, epoch, pins, spec, i, failed, ckpt, verified):
+                    continue
+                if self._may_escalate(run_id, i, pins, len(failed), spec):
+                    role = "escalation"
+                    self.journal.event(
+                        run_id, epoch, "escalated", step_index=i, model=pins["models"]["escalation"]
+                    )
+                elif not shaped and self._replan(
+                    manager, run_id, epoch, pins, spec, i, failed, ckpt, verified
+                ):
+                    continue
+            if len(failed) > spec.max_repairs and role != "escalation":
                 return self._park(
                     run_id,
                     epoch,
@@ -397,6 +471,7 @@ class Harness:
                     workspace=ws,
                     propose=propose,
                     max_turns=spec.max_worker_turns,
+                    effort=escalate_effort(step.effort or self.config.worker_effort, len(failed)),
                     role=role,
                 )
             except BudgetExceeded:
@@ -438,7 +513,7 @@ class Harness:
                 self.journal.discard_proposed_effects(run_id, epoch, i)
                 continue
 
-            verdict = ScriptGate(spec.gate).evaluate(ckpt, verified, commit, step)
+            verdict = ScriptGate(spec.gate, vetter=self.vetter).evaluate(ckpt, verified, commit, step)
             if verdict.status == "unsure" and self.config.use_judge:
                 try:
                     verdict = self.judge.evaluate(
@@ -463,6 +538,10 @@ class Harness:
                 continue
             if verdict.status == "unsure":
                 self.journal.discard_proposed_effects(run_id, epoch, i)
+                # Nothing can decide the step as written: the planner rewrites it (better checks) first.
+                unsure = [{"verdict": {"failures": [verdict.summary, *verdict.failures]}}]
+                if self._replan(manager, run_id, epoch, pins, spec, i, unsure, ckpt, verified):
+                    continue
                 return self._park(
                     run_id,
                     epoch,
@@ -567,6 +646,31 @@ class Harness:
                 {"effect_keys": [k for k, _ in flushed.parked]},
             )
         return None
+
+
+EFFORT_LADDER = ["low", "medium", "high"]
+
+
+_PLAN_SHAPED = re.compile(
+    r"missing file|No module named|ImportError|cannot import name|has no attribute|not defined|"
+    r"FileNotFoundError|expected files are missing|plan checks cannot tell",
+    re.I,
+)
+
+
+def plan_shaped(failed: list[dict[str, Any]]) -> bool:
+    """Do the last failures look like a plan problem (missing file or symbol, a check that does not
+    fit the spec) rather than a logic bug a stronger worker could fix?"""
+    recent = [f for a in failed[-2:] for f in ((a.get("verdict") or {}).get("failures") or [])]
+    recent = [f for f in recent if f != "no progress"]
+    return bool(recent) and all(_PLAN_SHAPED.search(f) for f in recent)
+
+
+def escalate_effort(effort: str, repairs: int) -> str:
+    """Each repair runs the worker one effort level higher, capped at high."""
+    if effort not in EFFORT_LADDER:
+        return effort
+    return EFFORT_LADDER[min(EFFORT_LADDER.index(effort) + repairs, len(EFFORT_LADDER) - 1)]
 
 
 def _ls_tree(ckpt: GitCheckpoint, commit: str) -> list[str]:
