@@ -48,6 +48,8 @@ urh calls <run_id>                     # model-call log: tokens, cache hits, dol
 urh stats                              # park rate, human touches, cost and calls per verified run
 urh trigger add-cron nightly "0 3 * * *" examples/slug/spec.json
 URH_WEBHOOK_SECRET=... urh trigger add-webhook push examples/slug/spec.json
+urh session new examples/slug/spec.json --title slug      # a conversation over one codebase
+urh session send <session_id> "Add unicode folding" --check unicode
 urh daemon --interval 5                # headless: fire triggers, wake parks, drive runs
 URH_API_TOKEN=... urh serve --port 8787   # the same, plus the HTTP API (see src/urh/server.py)
 ```
@@ -55,6 +57,10 @@ URH_API_TOKEN=... urh serve --port 8787   # the same, plus the HTTP API (see src
 Parks that need a person are pushed out as they happen: set `URH_NOTIFY_WEBHOOK` (with optional
 `URH_NOTIFY_SECRET` and `URH_NOTIFY_FORMAT=slack`) or `URH_NOTIFY_FILE`. Delivery is at least once, with a
 stable `Idempotency-Key` per park and channel.
+
+A session turns each message into its own run, started from the previous run's verified commit, in order.
+A parked message holds the ones after it. A message names the gate checks it adds, and every later message
+keeps being gated by them.
 
 A webhook POST to `/hooks/<name>` needs `X-URH-Signature: sha256=<HMAC of the body>`. GitHub's
 `X-Hub-Signature-256` and `X-GitHub-Delivery` headers work as they are.
@@ -118,6 +124,7 @@ written off at its reservation, and step 2 re-runs once. Call-level replay (D2) 
 | `cron.py` | Five-field UTC cron expressions |
 | `runtime.py` | Triggers (cron, signed webhooks) that fire exactly once, self-waking parks, bounded run pool |
 | `notify.py` | Outbound park notifications (webhook, Slack-style, file) through a journaled outbox |
+| `sessions.py` | Headless sessions: ordered follow-up runs over one evolving verified tree |
 | `server.py` | HTTP API: runs, inbox, triggers, stats, `/hooks/<name>` (`urh serve`) |
 | `worker.py` | Haiku 5.5 tool loop and confined workspace tools |
 | `manager.py` | Code manager and Opus 5.5 manager |
