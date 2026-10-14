@@ -111,3 +111,27 @@ def test_plan_step_first_writer_wins(j):
     first = j.plan_step(rid, e, 0, {"title": "a"}, "manager")
     second = j.plan_step(rid, e, 0, {"title": "b"}, "manager")
     assert first == second == {"title": "a"}
+
+
+def test_blob_store_survives_concurrent_writers_of_the_same_blob(tmp_path):
+    import threading
+
+    from urh.blobs import BlobStore
+
+    store = BlobStore(str(tmp_path / "blobs"))
+    errors = []
+
+    def put():
+        try:
+            for _ in range(50):
+                store.put_bytes(b"same content")
+        except Exception as e:  # pragma: no cover - the failure being tested
+            errors.append(e)
+
+    threads = [threading.Thread(target=put) for _ in range(8)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert errors == []
+    assert not [p for p in (tmp_path / "blobs").rglob("*.tmp")]

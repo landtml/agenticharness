@@ -45,8 +45,15 @@ urh status
 urh parks                              # questions waiting for a person
 urh answer <park_id> "approve"         # answers are claimed once, then the run is requeued
 urh calls <run_id>                     # model-call log: tokens, cache hits, dollars
-urh daemon --interval 5                # headless: keep driving runnable runs
+urh stats                              # park rate, human touches, cost and calls per verified run
+urh trigger add-cron nightly "0 3 * * *" examples/slug/spec.json
+URH_WEBHOOK_SECRET=... urh trigger add-webhook push examples/slug/spec.json
+urh daemon --interval 5                # headless: fire triggers, wake parks, drive runs
+URH_API_TOKEN=... urh serve --port 8787   # the same, plus the HTTP API (see src/urh/server.py)
 ```
+
+A webhook POST to `/hooks/<name>` needs `X-URH-Signature: sha256=<HMAC of the body>`. GitHub's
+`X-Hub-Signature-256` and `X-GitHub-Delivery` headers work as they are.
 
 `python -m pytest -m live tests/live` drives real Haiku 5.5 workers through the slug example (a few cents).
 
@@ -102,6 +109,9 @@ written off at its reservation, and step 2 re-runs once. Call-level replay (D2) 
 | `gate.py` | Script gate and mutant-corpus audit |
 | `judge.py` | Blind model judge for steps no script check covers |
 | `stats.py` | Outcome metrics: park rate, human touches, cost and calls per verified run |
+| `cron.py` | Five-field UTC cron expressions |
+| `runtime.py` | Triggers (cron, signed webhooks) that fire exactly once, self-waking parks, bounded run pool |
+| `server.py` | HTTP API: runs, inbox, triggers, stats, `/hooks/<name>` (`urh serve`) |
 | `worker.py` | Haiku 5.5 tool loop and confined workspace tools |
 | `manager.py` | Code manager and Opus 5.5 manager |
 | `context.py` | Stable prefix and per-step messages |
@@ -111,6 +121,6 @@ written off at its reservation, and step 2 re-runs once. Call-level replay (D2) 
 
 ## Not built yet
 
-Cue-triggered memory, a chat inbox for the parks that remain, cross-run rate limits beyond max active runs and a global spend cap, a mount-namespace
+Cue-triggered memory, outbound notifications for the parks that remain, cross-run rate limits beyond max active runs and a global spend cap, a mount-namespace
 `/work` sandbox, call replay (D2), and the offline release loop. Postgres can replace SQLite when runs
 span machines.

@@ -56,6 +56,7 @@ class HarnessConfig:
     max_auto_topups: int = 0  # ... at most this many times per run
     outage_wake_s: float = 300.0  # an outage park wakes itself after this long
     use_judge: bool = True  # a model judge decides steps no script check covers
+    max_crashes: int = 3  # unexpected exceptions on one run before it parks as harness_error
     escalate: bool = True  # one attempt on the escalation model before repairs_exhausted parks
 
 
@@ -168,6 +169,23 @@ class Harness:
             return self._drive(run_id, epoch, ckpt)
         except LeaseLost:
             return "lease_lost"
+        except Exception as e:
+            # A harness bug, not a model failure. Journal it; a run that keeps crashing parks instead of looping.
+            self.journal.event(run_id, epoch, "harness_crash", error=repr(e)[:500])
+            crashes = sum(1 for ev in self.journal.events(run_id) if ev["kind"] == "harness_crash")
+            if crashes >= cfg.max_crashes:
+                run = self.journal.get_run(run_id)
+                attempts = self.journal.attempts(run_id)
+                self._park(
+                    run_id,
+                    epoch,
+                    attempts[-1]["step_index"] if attempts else 0,
+                    "harness_error",
+                    f"The harness crashed {crashes} times on this run; last error: {repr(e)[:300]}",
+                    run.verified_commit,
+                )
+                return "parked"
+            raise
         finally:
             hb.stop_event.set()
             hb.join(timeout=5)
@@ -189,6 +207,15 @@ class Harness:
             pre["wake_at"] = time.time() + self.config.outage_wake_s
         self.journal.park(run_id, epoch, step_index, reason, question, pre)
         return "parked"
+
+    def _standing_requirements(self, run_id: str, spec: TaskSpec, i: int) -> list[str]:
+        """What the judge must keep enforcing: the goal, constraints, and every earlier step's instructions."""
+        reqs = [f"Goal: {spec.goal}", *(f"Constraint: {c}" for c in spec.constraints)]
+        for k in range(i):
+            plan = self.journal.planned_step(run_id, k) or {}
+            if plan.get("instructions"):
+                reqs.append(f"Step {k + 1} ({plan.get('title', '')}): {plan['instructions']}")
+        return reqs
 
     def _manager_for(self, spec: TaskSpec) -> Manager:
         return CodeManager() if spec.steps is not None else self.llm_manager
@@ -420,6 +447,7 @@ class Harness:
                         parent=verified,
                         candidate=commit,
                         step=step,
+                        requirements=self._standing_requirements(run_id, spec, i),
                     )
                 except (BudgetExceeded, ProviderDown) as e:
                     verdict = Verdict("unsure", f"judge unavailable: {type(e).__name__}")

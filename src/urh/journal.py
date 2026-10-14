@@ -20,7 +20,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Any
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS meta (
@@ -125,6 +125,20 @@ CREATE TABLE IF NOT EXISTS parks (
     created_at    REAL NOT NULL,
     updated_at    REAL NOT NULL
 );
+CREATE TABLE IF NOT EXISTS triggers (
+    id            TEXT PRIMARY KEY,
+    name          TEXT NOT NULL UNIQUE,
+    kind          TEXT NOT NULL,             -- cron | webhook
+    schedule      TEXT,                      -- cron expression (cron triggers)
+    spec_json     TEXT NOT NULL,             -- the run template
+    budget_usd    REAL NOT NULL,
+    secret        TEXT,                      -- HMAC key (webhook triggers)
+    enabled       INTEGER NOT NULL DEFAULT 1,
+    next_fire_at  REAL,
+    last_fired_at REAL,
+    fired         INTEGER NOT NULL DEFAULT 0,
+    created_at    REAL NOT NULL
+);
 """
 
 
@@ -227,7 +241,9 @@ class Journal:
                 raise RuntimeError(
                     f"journal schema {row['value']} is newer than this harness ({SCHEMA_VERSION}); refusing to open"
                 )
-            # Older versions would be migrated here, explicitly, one version at a time.
+            elif int(row["value"]) < SCHEMA_VERSION:
+                # 1 -> 2 only added the triggers table, which the idempotent DDL above created.
+                c.execute("UPDATE meta SET value=? WHERE key='schema_version'", (str(SCHEMA_VERSION),))
 
     def close(self) -> None:
         with self._lock:
@@ -811,3 +827,86 @@ class Journal:
             d["preconditions"] = json.loads(d["preconditions"])
             out.append(d)
         return out
+
+    # ------------------------------------------------------------------ triggers
+    def add_trigger(
+        self,
+        name: str,
+        kind: str,
+        spec: dict[str, Any],
+        budget_usd: float,
+        schedule: str | None = None,
+        secret: str | None = None,
+        next_fire_at: float | None = None,
+    ) -> str:
+        if kind not in ("cron", "webhook"):
+            raise ValueError(f"unknown trigger kind {kind!r}")
+        tid = new_id("trg")
+        with self.tx() as c:
+            c.execute(
+                "INSERT INTO triggers(id, name, kind, schedule, spec_json, budget_usd, secret, next_fire_at,"
+                " created_at) VALUES (?,?,?,?,?,?,?,?,?)",
+                (
+                    tid,
+                    name,
+                    kind,
+                    schedule,
+                    json.dumps(spec, sort_keys=True),
+                    budget_usd,
+                    secret,
+                    next_fire_at,
+                    _now(),
+                ),
+            )
+        return tid
+
+    @staticmethod
+    def _trigger(row: sqlite3.Row) -> dict[str, Any]:
+        d = dict(row)
+        d["spec"] = json.loads(d.pop("spec_json"))
+        d["enabled"] = bool(d["enabled"])
+        return d
+
+    def get_trigger(self, name: str) -> dict[str, Any] | None:
+        row = self._conn.execute("SELECT * FROM triggers WHERE name=? OR id=?", (name, name)).fetchone()
+        return None if row is None else self._trigger(row)
+
+    def list_triggers(self) -> list[dict[str, Any]]:
+        return [self._trigger(r) for r in self._conn.execute("SELECT * FROM triggers ORDER BY created_at")]
+
+    def due_triggers(self, now: float) -> list[dict[str, Any]]:
+        rows = self._conn.execute(
+            "SELECT * FROM triggers WHERE kind='cron' AND enabled=1 AND next_fire_at<=? ORDER BY next_fire_at",
+            (now,),
+        ).fetchall()
+        return [self._trigger(r) for r in rows]
+
+    def set_trigger_enabled(self, name: str, enabled: bool) -> None:
+        with self.tx() as c:
+            if (
+                c.execute(
+                    "UPDATE triggers SET enabled=? WHERE name=? OR id=?", (int(enabled), name, name)
+                ).rowcount
+                == 0
+            ):
+                raise KeyError(name)
+
+    def delete_trigger(self, name: str) -> None:
+        with self.tx() as c:
+            if c.execute("DELETE FROM triggers WHERE name=? OR id=?", (name, name)).rowcount == 0:
+                raise KeyError(name)
+
+    def advance_trigger(
+        self, trigger_id: str, expected_next: float | None, next_fire_at: float | None
+    ) -> bool:
+        """Move a trigger past a fire. CAS on ``next_fire_at`` so two schedulers cannot both advance it."""
+        with self.tx() as c:
+            cur = c.execute(
+                "UPDATE triggers SET next_fire_at=?, last_fired_at=?, fired=fired+1 WHERE id=? AND next_fire_at IS ?",
+                (next_fire_at, _now(), trigger_id, expected_next),
+            )
+            return cur.rowcount == 1
+
+    def find_run_by_dedupe(self, dedupe_key: str) -> str | None:
+        row = self._conn.execute("SELECT id FROM runs WHERE dedupe_key=?", (dedupe_key,)).fetchone()
+        return None if row is None else row["id"]

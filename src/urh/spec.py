@@ -88,6 +88,8 @@ class TaskSpec:
     max_repairs: int = 2
     max_worker_turns: int = 30
     max_steps: int = 20
+    # data a trigger attached (webhook body, fire time); shown to models as untrusted, never as instructions
+    inputs: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
     def from_dict(cls, d: dict[str, Any], base_dir: str | None = None) -> TaskSpec:
@@ -117,6 +119,7 @@ class TaskSpec:
             max_repairs=int(d.get("max_repairs", 2)),
             max_worker_turns=int(d.get("max_worker_turns", 30)),
             max_steps=int(d.get("max_steps", 20)),
+            inputs=dict(d.get("inputs", {})),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -135,6 +138,7 @@ class TaskSpec:
             "max_repairs": self.max_repairs,
             "max_worker_turns": self.max_worker_turns,
             "max_steps": self.max_steps,
+            **({"inputs": self.inputs} if self.inputs else {}),
         }
 
     @classmethod
