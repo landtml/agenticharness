@@ -8,6 +8,7 @@ import os
 import sys
 import time
 
+from . import stats
 from .gateway import AnthropicProvider, Provider
 from .orchestrator import Harness, HarnessConfig
 from .spec import TaskSpec
@@ -85,6 +86,7 @@ def main(argv: list[str] | None = None) -> int:
     b = sub.add_parser("add-budget", help="raise a run's budget")
     b.add_argument("run_id")
     b.add_argument("amount", type=float)
+    sub.add_parser("stats", help="outcome metrics: park rate, cost and calls per verified run")
     c = sub.add_parser("calls", help="show a run's model-call log")
     c.add_argument("run_id")
 
@@ -134,6 +136,8 @@ def main(argv: list[str] | None = None) -> int:
             )
     elif args.cmd == "answer":
         print(j.answer_park(args.park_id, args.text))
+    elif args.cmd == "stats":
+        print(json.dumps(stats.compute(j), indent=2))
     elif args.cmd == "add-budget":
         j.add_budget(args.run_id, args.amount)
     elif args.cmd == "calls":

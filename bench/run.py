@@ -22,6 +22,7 @@ import time
 from urh.cli import _provider
 from urh.orchestrator import Harness, HarnessConfig
 from urh.spec import Check, GateSpec, StepSpec, TaskSpec
+from urh.stats import compute as journal_stats
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -91,6 +92,8 @@ def run_task(name: str, provider: str, home: str, budget: float, planner_effort:
         "replan_failed": sum(1 for e in events if e["kind"] == "replan_failed"),
         "parks": [p["reason"] for p in h.journal.parks(rid)],
         "attempts": len([c for c in calls if c["role"] == "worker"]),
+        "escalations": sum(1 for e in events if e["kind"] == "escalated"),
+        "stats": journal_stats(h.journal),
     }
 
 

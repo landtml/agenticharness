@@ -73,35 +73,49 @@ def test_failed_attempt_effects_are_discarded_not_fired(harness_factory, hidden,
     assert deliveries(tmp_path / "home") == []
 
 
-def test_identical_repair_parks_for_no_progress(harness_factory, hidden):
+def test_identical_repairs_count_as_failures_then_escalate_then_park(harness_factory, hidden):
     bad = [[{"write": "add.py", "content": "def add(a, b):\n    return 0\n"}], [{"finish": "x"}]]
     h = harness_factory(good_script(**{"1": bad}))
     rid = h.submit(make_spec(hidden))
     assert h.run(rid) == "parked"
-    assert h.journal.parks(rid)[0]["reason"] == "no_progress"
+    assert h.journal.parks(rid)[0]["reason"] == "repairs_exhausted"
+    attempts = h.journal.attempts(rid, 0)
+    assert [a["status"] for a in attempts] == ["fail"] * 4  # 1 + max_repairs(2) + 1 escalation
+    assert "no progress" in attempts[1]["verdict"]["summary"]
+    roles = {(c["attempt"], c["role"], c["model"]) for c in h.journal.model_calls(rid)}
+    assert (4, "escalation", "claude-opus-5-5") in roles
 
 
-def test_repairs_exhausted_parks_then_answer_resumes(harness_factory, hidden):
+def test_escalation_rescues_step_without_a_person(harness_factory, hidden):
     script = good_script(
         **{
             "1": [[{"write": "add.py", "content": "def add(a, b):\n    return 0\n"}], [{"finish": "x"}]],
             "1@2": [[{"write": "add.py", "content": "def add(a, b):\n    return 1\n"}], [{"finish": "x"}]],
+            "1@3": [[{"write": "add.py", "content": ADD_PY}], [{"finish": "ok"}]],
         }
     )
     h = harness_factory(script)
     rid = h.submit(make_spec(hidden, max_repairs=1))
+    assert h.run(rid) == "done"
+    assert h.journal.parks(rid) == []
+    assert [a["status"] for a in h.journal.attempts(rid, 0)] == ["fail", "fail", "pass"]
+
+
+def test_park_answer_is_claimed_once_and_reaches_the_worker(harness_factory, hidden):
+    bad = [[{"write": "add.py", "content": "def add(a, b):\n    return 0\n"}], [{"finish": "x"}]]
+    h = harness_factory(good_script(**{"1": bad}), escalate=False)
+    rid = h.submit(make_spec(hidden, max_repairs=0))
     assert h.run(rid) == "parked"
     park = h.journal.parks(rid, status="open")[0]
-    assert park["reason"] == "repairs_exhausted"
-    # A person answers; the scripted worker now gets it right on the next attempt.
-    h.gateway.provider.script["steps"]["1@3"] = [[{"write": "add.py", "content": ADD_PY}], [{"finish": "ok"}]]
+    h.gateway.provider.script["steps"]["1@2"] = [[{"write": "add.py", "content": ADD_PY}], [{"finish": "ok"}]]
     h.journal.answer_park(park["id"], "add must return the sum")
-    # The park answer alone does not reset the repair counter; raise the limit as a person would.
     spec = make_spec(hidden, max_repairs=3)
     with h.journal.tx() as c:
         c.execute("UPDATE runs SET spec_json=? WHERE id=?", (json.dumps(spec.to_dict()), rid))
     assert h.run(rid) == "done"
     assert h.journal.parks(rid)[0]["status"] == "claimed"
+    first = [c for c in h.journal.model_calls(rid) if c["attempt"] == 2 and c["call_index"] == 0][0]
+    assert "add must return the sum" in h.blobs.get_bytes(first["request_blob"]).decode()
 
 
 def test_budget_exhaustion_parks_and_top_up_resumes(harness_factory, hidden):
@@ -176,3 +190,47 @@ def test_mul_content_constant_is_valid():
     ns: dict = {}
     exec(MUL_PY, ns)
     assert ns["mul"](3, 4) == 12
+
+
+def test_budget_policy_tops_up_instead_of_parking(harness_factory, hidden):
+    h = harness_factory(good_script(), auto_topup_usd=0.5, max_auto_topups=1)
+    rid = h.submit(make_spec(hidden), budget_usd=0.0001)
+    assert h.run(rid) == "done"
+    assert h.journal.parks(rid) == []
+    assert [e["kind"] for e in h.journal.events(rid)].count("auto_topup") == 1
+
+
+def test_outage_park_wakes_itself_after_cooldown(harness_factory, hidden):
+    script = good_script()
+    script["fail_calls"] = 3  # retries=2 means 3 failed tries, then the provider recovers
+    h = harness_factory(script, outage_wake_s=0.0)
+    rid = h.submit(make_spec(hidden))
+    assert h.run(rid) == "parked"
+    assert h.journal.parks(rid)[0]["reason"] == "outage"
+    assert h.run_pending() == {}  # the breaker is still open: waking now would just park again
+    h.gateway.breaker.cooldown_s = 0.0
+    assert h.run_pending() == {rid: "done"}
+    assert h.journal.parks(rid)[0]["answer"].startswith("auto:")
+
+
+def test_judge_decides_step_no_script_covers(harness_factory, hidden):
+    script = good_script()
+    script["judge"] = [
+        {"verdict": "fail", "reasons": ["mul is missing a docstring"]},
+        {"verdict": "pass", "reasons": []},
+    ]
+    script["steps"]["2@2"] = [
+        [{"write": "mul.py", "content": '"""Multiply."""\n' + MUL_PY}],
+        [{"finish": "ok"}],
+    ]
+    spec = make_spec(hidden)
+    spec.steps[1].checks = ["nonexistent"]  # no script applies
+    h = harness_factory(script)
+    rid = h.submit(spec)
+    assert h.run(rid) == "done"
+    statuses = [a["status"] for a in h.journal.attempts(rid, 1)]
+    assert statuses == ["fail", "pass"]
+    judge_calls = [c for c in h.journal.model_calls(rid) if c["role"] == "judge"]
+    assert len(judge_calls) == 2
+    req = h.blobs.get_bytes(judge_calls[0]["request_blob"]).decode()
+    assert "mul written" not in req  # blind to the worker's own summary

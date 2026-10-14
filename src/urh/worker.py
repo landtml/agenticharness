@@ -172,12 +172,13 @@ class Worker:
         propose: ProposeFn,
         max_turns: int,
         effort: str | None = None,
+        role: str = "worker",
     ) -> WorkerOutcome:
         messages: list[dict[str, Any]] = [{"role": "user", "content": first_message}]
         effects = 0
         stop: str | None = None
         for turn in range(max_turns):
-            ctx = CallContext(run_id, epoch, step_index, attempt, "worker", turn)
+            ctx = CallContext(run_id, epoch, step_index, attempt, role, turn)
             resp = self.gateway.call(
                 ctx,
                 pins,

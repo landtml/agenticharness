@@ -42,11 +42,13 @@ __all__ = [
     "estimate_reservation",
 ]
 
-ROLES = ("manager", "worker", "judge")
+ROLES = ("manager", "worker", "judge", "escalation")
 DEFAULT_MODELS: dict[str, str] = {
     "manager": "claude-opus-5-5",
     "worker": "claude-haiku-5-5",
     "judge": "claude-haiku-5-5",
+    # one stronger attempt when the worker's repairs are exhausted, before anything parks
+    "escalation": "claude-opus-5-5",
 }
 MANAGER_MODEL = DEFAULT_MODELS["manager"]
 WORKER_MODEL = DEFAULT_MODELS["worker"]
@@ -78,6 +80,11 @@ class CircuitBreaker:
                 self.failures = self.threshold - 1
                 return True
             return False
+
+    def is_open(self) -> bool:
+        """True while calls are refused; unlike ``allow`` it never moves the breaker to half-open."""
+        with self._lock:
+            return self.opened_at is not None and time.monotonic() - self.opened_at < self.cooldown_s
 
     def record(self, ok: bool) -> None:
         with self._lock:
@@ -123,7 +130,13 @@ class ModelGateway:
 
     def pins_for(self, models: dict[str, str] | None = None) -> dict[str, Any]:
         """Pins recorded on a new run: this gateway's provider and a model for every role."""
-        chosen = {**DEFAULT_MODELS, **(models or {})}
+        models = dict(models or {})
+        # A role left out follows its natural sibling before the defaults, so a config that names
+        # only vendor models never silently falls back to another vendor for judge or escalation.
+        for role, sibling in (("judge", "worker"), ("escalation", "manager")):
+            if role not in models and sibling in models:
+                models[role] = models[sibling]
+        chosen = {**DEFAULT_MODELS, **models}
         return {"provider": self.provider.name, "models": {r: chosen[r] for r in ROLES}}
 
     @staticmethod

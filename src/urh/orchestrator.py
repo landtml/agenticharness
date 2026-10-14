@@ -12,6 +12,7 @@ from __future__ import annotations
 import os
 import socket
 import threading
+import time
 import uuid
 from dataclasses import dataclass, field
 from typing import Any
@@ -24,6 +25,7 @@ from .effects import EffectAdapter, EffectGuard, OutboxFileAdapter
 from .gate import ScriptGate, Verdict
 from .gateway import DEFAULT_MODELS, ModelGateway, Provider, ProviderDown
 from .journal import SCHEMA_VERSION, BudgetExceeded, Journal, LeaseLost
+from .judge import LLMJudge
 from .manager import CodeManager, LLMManager, Manager
 from .planner import PlanningManager
 from .pricing import PriceBook
@@ -52,6 +54,12 @@ class HarnessConfig:
     command_timeout: float = 60.0
     # Which model plays which role. Any provider's model ids work; these are only the defaults.
     models: dict[str, str] = field(default_factory=lambda: dict(DEFAULT_MODELS))
+    # Policies that resolve would-be parks without a person. A park is a failure mode, not a normal path.
+    auto_topup_usd: float = 0.0  # budget added automatically when a run runs dry ...
+    max_auto_topups: int = 0  # ... at most this many times per run
+    outage_wake_s: float = 300.0  # an outage park wakes itself after this long
+    use_judge: bool = True  # a model judge decides steps no script check covers
+    escalate: bool = True  # one attempt on the escalation model before repairs_exhausted parks
 
 
 class _Heartbeat(threading.Thread):
@@ -102,6 +110,7 @@ class Harness:
         self.worker = Worker(self.gateway, effort=self.config.worker_effort)
         self.llm_manager = LLMManager(self.gateway, effort=self.config.manager_effort)
         self.planner = PlanningManager(self.gateway, effort=self.config.planner_effort)
+        self.judge = LLMJudge(self.gateway)
 
     # ------------------------------------------------------------------ admission
     def submit(self, spec: TaskSpec, dedupe_key: str | None = None, budget_usd: float | None = None) -> str:
@@ -122,14 +131,26 @@ class Harness:
 
     def runnable(self) -> list[str]:
         """Queued runs, and running runs whose lease expired (their process died)."""
-        import time
-
         now = time.time()
         out = [r.id for r in self.journal.list_runs("queued")]
         out += [r.id for r in self.journal.list_runs("running") if r.lease_expires < now]
         return out
 
+    def wake_due(self) -> list[str]:
+        """Answer parks that resolve themselves with time (provider outages). Returns requeued run ids."""
+        woke = []
+        now = time.time()
+        for park in self.journal.parks(status="open"):
+            wake_at = park["preconditions"].get("wake_at")
+            if wake_at is not None and wake_at <= now and not self.gateway.breaker.is_open():
+                try:
+                    woke.append(self.journal.answer_park(park["id"], "auto: retry after cooldown"))
+                except ValueError:
+                    continue  # someone else answered it first
+        return woke
+
     def run_pending(self) -> dict[str, str]:
+        self.wake_due()
         results = {}
         for run_id in self.runnable():
             if self.journal.count_active() >= self.config.max_active_runs:
@@ -167,9 +188,10 @@ class Harness:
         verified: str | None,
         extra: dict[str, Any] | None = None,
     ) -> str:
-        self.journal.park(
-            run_id, epoch, step_index, reason, question, {"verified_commit": verified, **(extra or {})}
-        )
+        pre = {"verified_commit": verified, **(extra or {})}
+        if reason == "outage":
+            pre["wake_at"] = time.time() + self.config.outage_wake_s
+        self.journal.park(run_id, epoch, step_index, reason, question, pre)
         return "parked"
 
     def _replan(
@@ -260,7 +282,7 @@ class Harness:
                     )
             elif park["reason"] == "budget":
                 pass  # top-ups arrive via add_budget; the answer only wakes the run
-            else:
+            elif not text.startswith("auto:"):
                 answers.append(text)
 
         # Effects of steps that verified before a crash still have to fire (outbox).
@@ -304,6 +326,8 @@ class Harness:
                         files=files,
                     )
                 except BudgetExceeded:
+                    if self._auto_topup(run_id, epoch):
+                        continue
                     return self._park(
                         run_id,
                         epoch,
@@ -344,7 +368,13 @@ class Harness:
                     return parked
                 continue
             failed = [a for a in prior if a["status"] == "fail"]
-            if len(failed) > spec.max_repairs:
+            role = "worker"
+            if len(failed) > spec.max_repairs and self._may_escalate(run_id, i, pins, len(failed), spec):
+                role = "escalation"
+                self.journal.event(
+                    run_id, epoch, "escalated", step_index=i, model=pins["models"]["escalation"]
+                )
+            elif len(failed) > spec.max_repairs:
                 if self._replan(manager, run_id, epoch, pins, spec, i, failed, ckpt, verified):
                     continue
                 return self._park(
@@ -389,12 +419,15 @@ class Harness:
                     propose=propose,
                     max_turns=spec.max_worker_turns,
                     effort=escalate_effort(step.effort or self.config.worker_effort, len(failed)),
+                    role=role,
                 )
             except BudgetExceeded:
                 self.journal.record_verdict(
                     run_id, epoch, i, attempt, "aborted", None, None, {"summary": "budget"}
                 )
                 self.journal.discard_proposed_effects(run_id, epoch, i)
+                if self._auto_topup(run_id, epoch):
+                    continue
                 return self._park(
                     run_id, epoch, i, "budget", "The run's budget is spent. Add budget to continue.", verified
                 )
@@ -417,26 +450,32 @@ class Harness:
 
             tree, commit = ckpt.snapshot(epoch, verified, f"step {i + 1}: {step.title} (attempt {attempt})")
             if any(a["tree"] == tree for a in failed):
+                # Identical to a failed attempt: it cannot pass, so skip the gate and count it as a failure.
                 v = Verdict(
                     "fail",
                     "no progress: the attempt produced the same tree as a failed one",
-                    failures=["no progress"],
+                    failures=[*((failed[-1]["verdict"] or {}).get("failures", [])[:5]), "no progress"],
                 )
                 self.journal.record_verdict(run_id, epoch, i, attempt, "fail", tree, commit, v.to_dict())
                 self.journal.discard_proposed_effects(run_id, epoch, i)
-                no_progress = [*failed, {"verdict": v.to_dict()}]
-                if self._replan(manager, run_id, epoch, pins, spec, i, no_progress, ckpt, verified):
-                    continue
-                return self._park(
-                    run_id,
-                    epoch,
-                    i,
-                    "no_progress",
-                    f"Step '{step.title}' repeated a failed attempt unchanged.",
-                    verified,
-                )
+                continue
 
             verdict = ScriptGate(spec.gate).evaluate(ckpt, verified, commit, step)
+            if verdict.status == "unsure" and self.config.use_judge:
+                try:
+                    verdict = self.judge.evaluate(
+                        run_id=run_id,
+                        epoch=epoch,
+                        step_index=i,
+                        attempt=attempt,
+                        pins=pins,
+                        ckpt=ckpt,
+                        parent=verified,
+                        candidate=commit,
+                        step=step,
+                    )
+                except (BudgetExceeded, ProviderDown) as e:
+                    verdict = Verdict("unsure", f"judge unavailable: {type(e).__name__}")
             self.journal.record_verdict(
                 run_id, epoch, i, attempt, verdict.status, tree, commit, verdict.to_dict()
             )
@@ -459,6 +498,27 @@ class Harness:
             verified = commit
             if parked:
                 return parked
+
+    def _auto_topup(self, run_id: str, epoch: int) -> bool:
+        """Apply the pre-set budget policy instead of parking. Returns True if budget was added."""
+        cfg = self.config
+        if cfg.auto_topup_usd <= 0 or cfg.max_auto_topups <= 0:
+            return False
+        used = sum(1 for e in self.journal.events(run_id) if e["kind"] == "auto_topup")
+        if used >= cfg.max_auto_topups:
+            return False
+        self.journal.add_budget(run_id, cfg.auto_topup_usd)
+        self.journal.event(run_id, epoch, "auto_topup", amount=cfg.auto_topup_usd, n=used + 1)
+        return True
+
+    def _may_escalate(self, run_id: str, i: int, pins: dict[str, Any], failures: int, spec: TaskSpec) -> bool:
+        if not self.config.escalate or "escalation" not in pins.get("models", {}):
+            return False
+        if failures != spec.max_repairs + 1:
+            return False
+        return not any(
+            e["kind"] == "escalated" and e.get("step_index") == i for e in self.journal.events(run_id)
+        )
 
     def _commit_pass(
         self,

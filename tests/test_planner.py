@@ -176,9 +176,11 @@ def test_exhausted_repairs_replan_instead_of_parking(make, hidden):
     assert statuses[-1] == "pass" and "superseded" in statuses
     assert [e["why"] for e in h.journal.events(rid) if e["kind"] == "plan"] == ["plan", "replan"]
     assert "kept failing" in p.planner_prompts[1]
-    # The repair ran one effort level higher; it rebuilt the same failed tree, which trips the no-progress
-    # wire straight into a replan, and the replanned step starts again at its own effort.
-    assert p.worker_efforts == ["low", "low", "medium", "low"]
+    # Repairs climb the effort ladder; an unchanged repair counts as a failure; one escalation try runs
+    # before the replan, and the replanned step starts again at its own effort.
+    efforts = p.worker_efforts
+    assert efforts[:3] == ["low", "low", "medium"] and efforts[-1] == "low"
+    assert any(e["kind"] == "escalated" for e in h.journal.events(rid))
 
 
 def test_replan_that_repeats_the_failed_step_is_rejected(make, hidden):
