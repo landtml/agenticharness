@@ -25,7 +25,7 @@ from urh.spec import Check, GateSpec, StepSpec, TaskSpec
 from urh.stats import compute as journal_stats
 
 OUTAGE_WAKE_S = 120.0
-MAX_AUTO_WAKES = 6
+MAX_AUTO_WAKES = 15
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 
