@@ -58,6 +58,7 @@ class HarnessConfig:
     use_judge: bool = True  # a model judge decides steps no script check covers
     max_concurrent_calls: int | None = None  # provider calls in flight at once, across every run here
     max_crashes: int = 3  # unexpected exceptions on one run before it parks as harness_error
+    escalation_max_fraction: float = 0.5  # an escalation may use at most this share of the remaining budget
     escalate: bool = True  # one attempt on the escalation model before repairs_exhausted parks
 
 
@@ -493,9 +494,43 @@ class Harness:
             return False
         if failures != spec.max_repairs + 1:
             return False
-        return not any(
-            e["kind"] == "escalated" and e.get("step_index") == i for e in self.journal.events(run_id)
+        if any(e["kind"] == "escalated" and e.get("step_index") == i for e in self.journal.events(run_id)):
+            return False
+        return self._escalation_affordable(run_id, i, pins)
+
+    def _escalation_affordable(self, run_id: str, i: int, pins: dict[str, Any]) -> bool:
+        """Escalate only when it leaves room for what comes after it (a replan and one more attempt).
+
+        Live runs showed escalation eating most of a run's budget and leaving the replan nothing,
+        so the run parked on budget instead of on the step. The cost estimate is this step's mean
+        worker attempt, scaled by the escalation model's input price over the worker's.
+        """
+        run = self.journal.get_run(run_id)
+        remaining = run.budget_usd - run.spent_usd - run.reserved_usd
+        calls = self.journal.model_calls(run_id)
+        per_attempt: dict[int, float] = {}
+        for c in calls:
+            if c["step_index"] == i and c["role"] == "worker":
+                per_attempt[c["attempt"]] = per_attempt.get(c["attempt"], 0.0) + (c["cost_usd"] or 0.0)
+        attempt_cost = sum(per_attempt.values()) / len(per_attempt) if per_attempt else 0.0
+        prices = self.gateway.prices
+        ratio = prices.price(pins["models"]["escalation"]).input / max(
+            prices.price(pins["models"]["worker"]).input, 1e-9
         )
+        escalation = attempt_cost * ratio
+        manager = [c["cost_usd"] or 0.0 for c in calls if c["role"] == "manager"]
+        after = attempt_cost + (max(manager) if manager else attempt_cost)
+        ok = escalation <= self.config.escalation_max_fraction * remaining and escalation + after <= remaining
+        if not ok:
+            self.journal.event(
+                run_id,
+                run.lease_epoch,
+                "escalation_skipped",
+                step_index=i,
+                estimate_usd=round(escalation, 6),
+                remaining_usd=round(remaining, 6),
+            )
+        return ok
 
     def _commit_pass(
         self,

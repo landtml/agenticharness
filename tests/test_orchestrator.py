@@ -101,6 +101,17 @@ def test_escalation_rescues_step_without_a_person(harness_factory, hidden):
     assert [a["status"] for a in h.journal.attempts(rid, 0)] == ["fail", "fail", "pass"]
 
 
+def test_escalation_is_skipped_when_it_would_starve_what_comes_after(harness_factory, hidden):
+    bad = [[{"write": "add.py", "content": "def add(a, b):\n    return 0\n"}], [{"finish": "x"}]]
+    h = harness_factory(good_script(**{"1": bad, "1@2": bad}), escalation_max_fraction=0.0)
+    rid = h.submit(make_spec(hidden, max_repairs=1))
+    assert h.run(rid) == "parked"
+    assert h.journal.parks(rid)[0]["reason"] == "repairs_exhausted"
+    assert [a["status"] for a in h.journal.attempts(rid, 0)] == ["fail", "fail"]  # no escalation attempt
+    skipped = [e for e in h.journal.events(rid) if e["kind"] == "escalation_skipped"]
+    assert len(skipped) == 1 and skipped[0]["estimate_usd"] > 0
+
+
 def test_park_answer_is_claimed_once_and_reaches_the_worker(harness_factory, hidden):
     bad = [[{"write": "add.py", "content": "def add(a, b):\n    return 0\n"}], [{"finish": "x"}]]
     h = harness_factory(good_script(**{"1": bad}), escalate=False)
