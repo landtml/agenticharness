@@ -242,3 +242,32 @@ def test_missing_spec_checks_on_last_step_are_added_in_code_not_by_a_retry(make,
     assert h.run(rid) == "done"
     assert [c["role"] for c in h.journal.model_calls(rid)].count("manager") == 1
     assert h.planner.current_plan(rid).steps[-1].spec_checks == ["add", "mul"]
+
+
+def test_later_steps_rerun_earlier_plan_checks_unless_retired():
+    from urh.planner import regression_checks
+
+    a = pstep("add")
+    b = pstep("mul")
+    c = pstep("div", retire_checks=[a.plan_checks[0]])
+    plan = mplan([a, b, c])
+    assert regression_checks(plan, 0) == []
+    assert regression_checks(plan, 1) == a.plan_checks
+    assert regression_checks(plan, 2) == b.plan_checks
+    assert plan_errors(mplan([pstep("x", retire_checks=["nope"], spec_checks=["add"])]), ["add"])
+
+
+def test_a_step_that_breaks_an_earlier_step_fails_its_gate(make, hidden):
+    breaks_add = {
+        "2": [
+            [{"write": "add.py", "content": "x = 1\n"}, {"write": "mul.py", "content": MUL_PY}],
+            [{"finish": "mul"}],
+        ]
+    }
+    two = mplan([pstep("add", spec_checks=[]), pstep("mul", spec_checks=[])])
+    h, p = make(steps_script(**breaks_add), [two, "no", "no"])
+    rid = h.submit(make_spec(hidden, steps=None, max_repairs=0))
+    assert h.run(rid) == "parked"
+    first = h.journal.attempts(rid, 1)[0]
+    assert first["status"] in ("fail", "superseded")
+    assert any(f.startswith("plan2") for f in first["verdict"]["failures"])  # the regression check
