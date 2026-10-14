@@ -132,6 +132,13 @@ def test_provider_reported_cost_wins(tmp_path):
     assert j.model_calls(rid)[0]["cost_usd"] == pytest.approx(0.123)
 
 
+def test_unnamed_roles_follow_their_sibling_not_the_default_vendor(tmp_path):
+    h = Harness(str(tmp_path / "home"), ScriptedProvider(good_script()), config=fast_config())
+    pins = h.gateway.pins_for({"worker": "x/small", "manager": "x/big"})
+    assert pins["models"]["judge"] == "x/small"
+    assert pins["models"]["escalation"] == "x/big"
+
+
 def test_roles_map_to_any_model_ids(tmp_path, hidden):
     models = {"manager": "vendor/big-planner", "worker": "vendor/small-coder", "judge": "vendor/small-coder"}
     h = Harness(
@@ -142,7 +149,7 @@ def test_roles_map_to_any_model_ids(tmp_path, hidden):
     )
     rid = h.submit(make_spec(hidden))
     assert h.run(rid) == "done"
-    assert h.journal.get_run(rid).pins["models"] == models
+    assert h.journal.get_run(rid).pins["models"] == {**models, "escalation": "vendor/big-planner"}
     calls = h.journal.model_calls(rid)
     assert {c["model"] for c in calls} == {"vendor/small-coder"}
     assert all(c["cost_usd"] > 0 for c in calls)

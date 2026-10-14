@@ -81,7 +81,7 @@ CREATE TABLE IF NOT EXISTS model_calls (
     step_index      INTEGER NOT NULL,
     attempt         INTEGER NOT NULL,
     call_index      INTEGER NOT NULL,
-    role            TEXT NOT NULL,           -- worker | manager | judge
+    role            TEXT NOT NULL,           -- worker | manager | judge | escalation
     provider        TEXT NOT NULL,
     model           TEXT NOT NULL,
     status          TEXT NOT NULL,           -- reserved | ok | error

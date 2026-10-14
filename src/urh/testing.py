@@ -56,6 +56,12 @@ class ScriptedProvider:
             "cache_creation_input_tokens": 0,
         }
         if request.get("response_schema"):
+            if "verdict" in request["response_schema"].get("properties", {}):
+                verdicts = self.script.setdefault("judge", [])
+                item = verdicts.pop(0) if verdicts else {"verdict": "pass", "reasons": []}
+                return ProviderResponse(
+                    [{"type": "text", "text": json.dumps(item)}], "end_turn", usage, request["model"]
+                )
             return self._plan(request, usage)
         messages = request["messages"]
         first = messages[0]["content"]
