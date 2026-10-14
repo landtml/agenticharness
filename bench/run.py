@@ -140,10 +140,12 @@ def main() -> int:
     ap.add_argument("--mode", choices=["harness", "plain"], default="harness")
     ap.add_argument("--repeat", type=int, default=1)
     ap.add_argument("--out")
+    ap.add_argument("--keep", help="keep each run's harness home (journal, blobs, repo) under this directory")
     args = ap.parse_args()
     names = args.tasks or sorted(os.listdir(os.path.join(HERE, "tasks")))
     rows = []
-    with tempfile.TemporaryDirectory(prefix="urh-bench-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="urh-bench-") as scratch:
+        tmp = args.keep or scratch
         for k, name in enumerate(n for n in names for _ in range(args.repeat)):
             home = os.path.join(tmp, f"{name}-{k}")
             try:
