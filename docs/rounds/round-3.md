@@ -19,6 +19,23 @@ reject all of them and accept the reference. `unsure` counts as not accepted.
 v2 pooled: **1 false accept in 50** (95% CI 0.4–10.5%) for $0.14 across all six audit runs. Raw rows:
 `r3-judge-audit.json`.
 
+### Wider: the gate thread's blind evalset (8 tasks, 223 candidates)
+
+Same v2 judge, live on Haiku 5.5. Each candidate was copied in as `solution.py` under a shuffled order,
+because the corpus's file names (`broken_07.py`) would leak the label. Raw rows: `r3-judge-evalset.json`
+($0.21).
+
+| Checker | False accepts (of 183 broken) | False withholds (of 40 correct) |
+| --- | --- | --- |
+| Examples-only script gate (gate thread's baseline) | 124 | — |
+| **Model judge v2, alone** | **3** (1.6%, CI 0.6–4.7%) | **3** (7.5%) |
+| Full script gate, `urh_gate` (PR #3) | 0 | 0 |
+
+The judge's three false withholds are all one task (`parse_duration`), where it was pedantic, for example
+flagging Python's 4300-digit int limit. Its false accepts are two `roman` and one `semver` candidate. The
+order is the design: the script gate decides wherever a check exists, and the judge only fills gaps
+where the alternative is a park.
+
 **Why v1 failed.** It saw only the current step. Step 2 says "keep step 1 behaviour unchanged" without
 restating step 1, so mutants that broke step-1 rules (no stripping, dropped digits) looked fine. v2 gets
 the goal, the constraints and every earlier step's instructions as *standing requirements*. It must also
