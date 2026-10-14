@@ -143,7 +143,7 @@ def test_milestones_expand_one_at_a_time_from_verified_facts(make, hidden):
 
 
 def test_rejected_plan_is_retried_once_then_parks(make, hidden):
-    no_check = mplan([pstep("add", plan_checks=[], spec_checks=[])])
+    no_check = mplan([pstep("add", plan_checks=[]), pstep("mul", spec_checks=["add", "mul"])])
     h, p = make(steps_script(), [no_check, "not json", ONE])
     rid = h.submit(make_spec(hidden, steps=None))
     assert h.run(rid) == "parked"
@@ -233,3 +233,12 @@ def test_plan_schema_is_plain_json_schema():
 
     json.dumps(PLAN_SCHEMA)
     assert PLAN_SCHEMA["type"] == "object" and "steps" in PLAN_SCHEMA["properties"]
+
+
+def test_missing_spec_checks_on_last_step_are_added_in_code_not_by_a_retry(make, hidden):
+    forgot = mplan([pstep("add", spec_checks=["add"]), pstep("mul", spec_checks=[])])
+    h, p = make(steps_script(), [forgot])
+    rid = h.submit(make_spec(hidden, steps=None))
+    assert h.run(rid) == "done"
+    assert [c["role"] for c in h.journal.model_calls(rid)].count("manager") == 1
+    assert h.planner.current_plan(rid).steps[-1].spec_checks == ["add", "mul"]

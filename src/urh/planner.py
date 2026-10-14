@@ -140,6 +140,22 @@ def plan_errors(plan: Plan, spec_check_names: list[str]) -> list[str]:
     return errs
 
 
+def normalize_plan(plan: Plan, spec_check_names: list[str]) -> Plan:
+    """Fix in code what a model reliably forgets: a fully expanded plan ends by running every spec check.
+
+    Planners often leave the task's own checks off the last step; rejecting that costs a second strong
+    call for a fix with exactly one right answer.
+    """
+    if not plan.steps or not spec_check_names or any(not plan.milestone_steps(m.id) for m in plan.milestones):
+        return plan
+    last = plan.steps[-1]
+    missing = [c for c in spec_check_names if c not in last.spec_checks]
+    if not missing:
+        return plan
+    steps = [*plan.steps[:-1], last.model_copy(update={"spec_checks": [*last.spec_checks, *missing]})]
+    return plan.model_copy(update={"steps": steps})
+
+
 def locked_prefix_errors(old: Plan, new: Plan, n_verified: int) -> list[str]:
     """The first ``n_verified`` steps have run and verified; a new plan must keep them unchanged."""
     errs = []
@@ -305,6 +321,7 @@ class PlanningManager:
             except (json.JSONDecodeError, ValidationError) as e:
                 errors = [f"the answer was not a valid plan: {str(e)[:400]}"]
                 continue
+            plan = normalize_plan(plan, _names(spec))
             errors = check(plan)
             if not errors:
                 self.gateway.journal.event(
