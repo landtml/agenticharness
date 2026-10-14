@@ -10,6 +10,10 @@ predecessor holds the session until someone answers it. Turning a message into a
 key ``session:<id>:<seq>`` and only then binds the run to the message, so a crash between the two
 finds the same run again: one message, one run.
 
+A message may name the gate checks it adds (``checks``). A run is gated by every check named by its
+message and the ones before it, so behaviour verified earlier keeps being checked, and a check meant
+for a later message cannot fail an earlier one. If no message names any, every check applies.
+
 Earlier messages and their outcomes go to the run as untrusted inputs. They are context for the
 planner, not instructions; the instruction is the message itself.
 """
@@ -28,6 +32,15 @@ TERMINAL = ("done", "failed")
 HISTORY = 10
 
 
+def _gated(template: dict[str, Any], upto: list[dict[str, Any]]) -> dict[str, Any]:
+    named = [c for m in upto if m["checks"] for c in m["checks"]]
+    if not any(m["checks"] is not None for m in upto):
+        return template
+    gate = dict(template.get("gate", {}))
+    gate["checks"] = [c for c in gate.get("checks", []) if c["name"] in set(named)]
+    return {**template, "gate": gate}
+
+
 class Sessions:
     def __init__(self, harness: Harness):
         self.h = harness
@@ -40,11 +53,19 @@ class Sessions:
         TaskSpec.from_dict({"goal": "-", **template})  # validate early
         return self.j.create_session(title, template, budget_usd)
 
-    def send(self, session_id: str, text: str) -> int:
+    def send(self, session_id: str, text: str, checks: list[str] | None = None) -> int:
         text = text.strip()
         if not text:
             raise ValueError("message text is required")
-        seq = self.j.add_session_message(session_id, text)
+        if checks is not None:
+            session = self.j.get_session(session_id)
+            if session is None:
+                raise KeyError(session_id)
+            known = {c["name"] for c in session["template"].get("gate", {}).get("checks", [])}
+            unknown = sorted(set(checks) - known)
+            if unknown:
+                raise ValueError(f"no such gate checks: {', '.join(unknown)}")
+        seq = self.j.add_session_message(session_id, text, checks)
         self.advance()
         return seq
 
@@ -83,7 +104,7 @@ class Sessions:
             ][-HISTORY:]
             spec = TaskSpec.from_dict(
                 {
-                    **session["template"],
+                    **_gated(session["template"], [m for m in history if m["seq"] <= seq]),
                     "goal": msg["text"],
                     "seed_dir": self._seed(session, prev["run_id"] if prev else None, seq),
                     "inputs": {
@@ -108,6 +129,7 @@ class Sessions:
             item: dict[str, Any] = {
                 "seq": m["seq"],
                 "text": m["text"],
+                "checks": m["checks"],
                 "run_id": m["run_id"],
                 "status": "waiting",
             }
