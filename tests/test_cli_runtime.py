@@ -33,3 +33,16 @@ def test_trigger_commands_round_trip(tmp_path, hidden):
 def test_serve_refuses_to_start_without_a_token(tmp_path):
     r = urh(tmp_path / "home", "serve", env={"URH_API_TOKEN": ""})
     assert r.returncode != 0 and "URH_API_TOKEN" in r.stderr
+
+
+def test_session_commands(tmp_path, hidden):
+    tpl = tmp_path / "tpl.json"
+    tpl.write_text(json.dumps({"gate": {"hidden_dir": hidden, "checks": []}, "constraints": ["stdlib"]}))
+    home = tmp_path / "home"
+    r = urh(home, "session", "new", str(tpl), "--title", "demo")
+    assert r.returncode == 0, r.stderr
+    sid = r.stdout.strip()
+    assert urh(home, "session", "send", sid, "Write add.py").stdout.strip() == "1"
+    assert urh(home, "session", "send", sid, "Then mul.py").stdout.strip() == "2"
+    view = json.loads(urh(home, "session", "show", sid).stdout)
+    assert [m["status"] for m in view["messages"]] == ["queued", "waiting"]

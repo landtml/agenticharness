@@ -91,3 +91,16 @@ def test_triggers_over_http_and_webhook_over_a_real_socket(api, hidden):
     assert call(api, "POST", "/v1/triggers/h/disable")[1]["enabled"] is False
     assert call(api, "DELETE", "/v1/triggers/c")[0] == 200
     assert call(api, "DELETE", "/v1/triggers/c")[0] == 404
+
+
+def test_sessions_over_http(api, hidden):
+    tpl = {"gate": {"hidden_dir": hidden, "checks": [], "protected": ["_hidden/"]}}
+    status, ses = call(api, "POST", "/v1/sessions", {"title": "t", "template": tpl, "budget_usd": 0.5})
+    assert status == 201 and ses["messages"] == []
+    status, sent = call(
+        api, "POST", f"/v1/sessions/{ses['id']}/messages", {"text": "Write a tiny arithmetic library"}
+    )
+    assert status == 201 and sent["seq"] == 1 and sent["messages"][0]["status"] == "queued"
+    assert call(api, "POST", f"/v1/sessions/{ses['id']}/messages", {"text": "  "})[0] == 400
+    assert call(api, "GET", "/v1/sessions/ses_nope")[0] == 404
+    assert [s["id"] for s in call(api, "GET", "/v1/sessions")[1]] == [ses["id"]]

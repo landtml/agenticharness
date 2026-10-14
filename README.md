@@ -70,8 +70,10 @@ A webhook POST to `/hooks/<name>` needs `X-URH-Signature: sha256=<HMAC of the bo
 3. The **context assembler** builds a byte-stable cached prefix (rules, pinned goal, constraints, facts) and a
    per-step message. Repair notes carry capped gate output fenced as untrusted data.
 4. The **worker** (Haiku 5.5) gets bash, read/write/list file tools and `propose_effect`, confined to a private
-   folder for this epoch. Real paths are rewritten to `/work`; the git repo and hidden tests are outside it.
-   Commands run with a scrubbed environment and, where the kernel allows, no network.
+   folder for this epoch. Commands (the worker's and the gate's) run in a jail where the kernel allows user
+   and mount namespaces: the folder is mounted at `/work`, the rest of the host is read-only, and `/home`,
+   `/root`, `/tmp`, the harness home and the source tree are empty. No network, no host processes in
+   `/proc`. `URH_SANDBOX=require` refuses to run commands on a host without the jail.
 5. Every model call goes through the **gateway**: model and provider come from the run's pins, the worst-case
    cost is reserved against the run's one budget before the call and settled after, and the call is logged
    with tokens, cache reads and writes, latency and blob references. Outages retry, then trip a circuit
@@ -121,11 +123,10 @@ written off at its reservation, and step 2 re-runs once. Call-level replay (D2) 
 | `manager.py` | Code manager and Opus 5.5 manager |
 | `context.py` | Stable prefix and per-step messages |
 | `orchestrator.py` | The control loop: leases, verdict routing, repairs, parks, admission |
-| `sandbox.py` | Scrubbed, timed, network-isolated command runner |
+| `sandbox.py` | Jailed command runner: `/work` only, read-only host, no network, timeout |
 | `testing.py` | Scripted provider for deterministic tests and offline demos |
 
 ## Not built yet
 
-Cue-triggered memory, cross-run rate limits beyond max active runs and a global spend cap, a mount-namespace
-`/work` sandbox, call replay (D2), and the offline release loop. Postgres can replace SQLite when runs
+Cue-triggered memory, cross-run rate limits beyond max active runs and a global spend cap, call replay (D2), and the offline release loop. Postgres can replace SQLite when runs
 span machines.

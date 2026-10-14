@@ -29,6 +29,7 @@ from typing import Any
 from .cron import Cron
 from .notify import Notifier
 from .orchestrator import Harness
+from .sessions import Sessions
 from .signing import verify
 from .spec import TaskSpec
 
@@ -57,6 +58,7 @@ class Runtime:
         notify_max_attempts: int = 8,
     ):
         self.h = harness
+        self.sessions = Sessions(harness)
         self.notifiers = {n.name: n for n in notifiers or []}
         self.notify_max_attempts = notify_max_attempts
         self.journal = harness.journal
@@ -208,8 +210,15 @@ class Runtime:
     def tick(self) -> dict[str, list[str]]:
         fired = self.fire_due()
         woke = self.h.wake_due()
+        continued = self.sessions.advance()
         started = self.dispatch()
-        return {"fired": fired, "woke": woke, "started": started, "notified": self.notify_parks()}
+        return {
+            "fired": fired,
+            "woke": woke,
+            "continued": continued,
+            "started": started,
+            "notified": self.notify_parks(),
+        }
 
     def inflight(self) -> list[str]:
         self._reap()

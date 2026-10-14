@@ -11,6 +11,7 @@ from . import notify, server, stats
 from .gateway import AnthropicProvider, Provider
 from .orchestrator import Harness, HarnessConfig
 from .runtime import Runtime
+from .sessions import Sessions
 from .spec import TaskSpec
 
 
@@ -83,6 +84,18 @@ def main(argv: list[str] | None = None) -> int:
     sv.add_argument("--interval", type=float, default=1.0)
     sv.add_argument("--workers", type=int)
 
+    se = sub.add_parser("session", help="headless sessions: follow-up tasks over one evolving codebase")
+    ses = se.add_subparsers(dest="session_cmd", required=True)
+    sn = ses.add_parser("new", help="start a session from a template spec (its goal and steps are ignored)")
+    sn.add_argument("template")
+    sn.add_argument("--title", default="session")
+    sn.add_argument("--budget", type=float, default=1.0, help="budget per message")
+    ss = ses.add_parser("send", help="add a message; it runs once the previous one has finished")
+    ss.add_argument("session_id")
+    ss.add_argument("text")
+    ses.add_parser("show").add_argument("session_id")
+    ses.add_parser("list")
+
     tr = sub.add_parser("trigger", help="manage cron and webhook triggers")
     trs = tr.add_subparsers(dest="trigger_cmd", required=True)
     tc = trs.add_parser("add-cron", help="start a run from SPEC on a cron schedule (UTC)")
@@ -139,6 +152,24 @@ def main(argv: list[str] | None = None) -> int:
             if len(token) < 16:
                 raise SystemExit("set URH_API_TOKEN (16+ characters) to serve the API")
             server.serve(rt, token, args.host, args.port, args.interval)
+    elif args.cmd == "session":
+        sessions = Sessions(h)
+        sc = args.session_cmd
+        if sc == "new":
+            with open(args.template) as f:
+                raw = json.load(f)
+            template = TaskSpec.from_dict(
+                {"goal": "-", **raw}, os.path.dirname(os.path.abspath(args.template))
+            )
+            tpl = {k: v for k, v in template.to_dict().items() if k not in ("goal", "steps")}
+            print(sessions.create(args.title, tpl, args.budget))
+        elif sc == "send":
+            print(sessions.send(args.session_id, args.text))
+        elif sc == "show":
+            print(json.dumps(sessions.view(args.session_id), indent=2))
+        else:
+            for row in j.list_sessions():
+                print(json.dumps(row))
     elif args.cmd == "trigger":
         rt = Runtime(h)
         tc_ = args.trigger_cmd

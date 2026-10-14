@@ -45,6 +45,29 @@ class ScriptedProvider:
             return cls(json.load(f))
 
     def complete(self, request: dict[str, Any]) -> ProviderResponse:
+        variants = self.script.get("by_goal")
+        if variants:
+            goal = self._goal(request)
+            for key, variant in variants.items():
+                if goal.startswith(key):
+                    subs = self.__dict__.setdefault("_subs", {})
+                    sub = subs.setdefault(key, ScriptedProvider({**variant, "fail_calls": 0}))
+                    self.calls += 1
+                    return sub.complete(request)
+        return self._complete(request)
+
+    @staticmethod
+    def _goal(request: dict[str, Any]) -> str:
+        system = request.get("system") or ""
+        text = system if isinstance(system, str) else " ".join(b.get("text", "") for b in system)
+        first = request["messages"][0]["content"] if request.get("messages") else ""
+        for src in (text, first if isinstance(first, str) else ""):
+            m = re.search(r"^GOAL(?: \(pinned\))?: (.*)$", src, re.M)
+            if m:
+                return m.group(1)
+        return ""
+
+    def _complete(self, request: dict[str, Any]) -> ProviderResponse:
         self.calls += 1
         if self.fail_calls > 0:
             self.fail_calls -= 1
