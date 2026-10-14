@@ -7,7 +7,7 @@ import json
 import os
 import sys
 
-from . import server, stats
+from . import notify, server, stats
 from .gateway import AnthropicProvider, Provider
 from .orchestrator import Harness, HarnessConfig
 from .runtime import Runtime
@@ -123,7 +123,7 @@ def main(argv: list[str] | None = None) -> int:
     elif args.cmd in ("daemon", "serve"):
         if args.workers:
             h.config.max_active_runs = args.workers
-        rt = Runtime(h)
+        rt = Runtime(h, notifiers=notify.from_env())
         if args.cmd == "daemon":
             try:
                 rt.serve(args.interval)

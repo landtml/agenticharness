@@ -52,6 +52,10 @@ urh daemon --interval 5                # headless: fire triggers, wake parks, dr
 URH_API_TOKEN=... urh serve --port 8787   # the same, plus the HTTP API (see src/urh/server.py)
 ```
 
+Parks that need a person are pushed out as they happen: set `URH_NOTIFY_WEBHOOK` (with optional
+`URH_NOTIFY_SECRET` and `URH_NOTIFY_FORMAT=slack`) or `URH_NOTIFY_FILE`. Delivery is at least once, with a
+stable `Idempotency-Key` per park and channel.
+
 A webhook POST to `/hooks/<name>` needs `X-URH-Signature: sha256=<HMAC of the body>`. GitHub's
 `X-Hub-Signature-256` and `X-GitHub-Delivery` headers work as they are.
 
@@ -111,6 +115,7 @@ written off at its reservation, and step 2 re-runs once. Call-level replay (D2) 
 | `stats.py` | Outcome metrics: park rate, human touches, cost and calls per verified run |
 | `cron.py` | Five-field UTC cron expressions |
 | `runtime.py` | Triggers (cron, signed webhooks) that fire exactly once, self-waking parks, bounded run pool |
+| `notify.py` | Outbound park notifications (webhook, Slack-style, file) through a journaled outbox |
 | `server.py` | HTTP API: runs, inbox, triggers, stats, `/hooks/<name>` (`urh serve`) |
 | `worker.py` | Haiku 5.5 tool loop and confined workspace tools |
 | `manager.py` | Code manager and Opus 5.5 manager |
@@ -121,6 +126,6 @@ written off at its reservation, and step 2 re-runs once. Call-level replay (D2) 
 
 ## Not built yet
 
-Cue-triggered memory, outbound notifications for the parks that remain, cross-run rate limits beyond max active runs and a global spend cap, a mount-namespace
+Cue-triggered memory, cross-run rate limits beyond max active runs and a global spend cap, a mount-namespace
 `/work` sandbox, call replay (D2), and the offline release loop. Postgres can replace SQLite when runs
 span machines.

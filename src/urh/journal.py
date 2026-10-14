@@ -139,6 +139,17 @@ CREATE TABLE IF NOT EXISTS triggers (
     fired         INTEGER NOT NULL DEFAULT 0,
     created_at    REAL NOT NULL
 );
+CREATE TABLE IF NOT EXISTS notifications (
+    key           TEXT PRIMARY KEY,          -- <park_id>:<channel>; also the receiver's Idempotency-Key
+    park_id       TEXT NOT NULL,
+    channel       TEXT NOT NULL,
+    status        TEXT NOT NULL,             -- pending | sent | failed
+    attempts      INTEGER NOT NULL DEFAULT 0,
+    next_try_at   REAL NOT NULL,
+    last_error    TEXT,
+    created_at    REAL NOT NULL,
+    sent_at       REAL
+);
 """
 
 
@@ -910,3 +921,51 @@ class Journal:
     def find_run_by_dedupe(self, dedupe_key: str) -> str | None:
         row = self._conn.execute("SELECT id FROM runs WHERE dedupe_key=?", (dedupe_key,)).fetchone()
         return None if row is None else row["id"]
+
+    # ------------------------------------------------------------------ notification outbox
+    def enqueue_notification(self, park_id: str, channel: str) -> bool:
+        key = f"{park_id}:{channel}"
+        with self.tx() as c:
+            cur = c.execute(
+                "INSERT OR IGNORE INTO notifications(key, park_id, channel, status, next_try_at, created_at)"
+                " VALUES (?,?,?,?,?,?)",
+                (key, park_id, channel, "pending", _now(), _now()),
+            )
+            return cur.rowcount == 1
+
+    def due_notifications(self, now: float) -> list[dict[str, Any]]:
+        rows = self._conn.execute(
+            "SELECT * FROM notifications WHERE status='pending' AND next_try_at<=? ORDER BY created_at",
+            (now,),
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+    def notifications(self, park_id: str | None = None) -> list[dict[str, Any]]:
+        if park_id is None:
+            rows = self._conn.execute("SELECT * FROM notifications ORDER BY created_at").fetchall()
+        else:
+            rows = self._conn.execute(
+                "SELECT * FROM notifications WHERE park_id=? ORDER BY created_at", (park_id,)
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+    def mark_notification(
+        self,
+        key: str,
+        ok: bool,
+        error: str | None = None,
+        retry_at: float | None = None,
+        give_up: bool = False,
+    ) -> None:
+        with self.tx() as c:
+            if ok:
+                c.execute(
+                    "UPDATE notifications SET status='sent', attempts=attempts+1, sent_at=?, last_error=NULL"
+                    " WHERE key=?",
+                    (_now(), key),
+                )
+            else:
+                c.execute(
+                    "UPDATE notifications SET status=?, attempts=attempts+1, last_error=?, next_try_at=? WHERE key=?",
+                    ("failed" if give_up else "pending", (error or "")[:500], retry_at or _now(), key),
+                )

@@ -3,7 +3,8 @@ import json
 import pytest
 from conftest import good_script, make_spec
 
-from urh.runtime import Runtime, WebhookRejected, sign
+from urh.runtime import Runtime, WebhookRejected
+from urh.signing import sign
 
 SECRET = "s3cret-s3cret-s3cret"
 

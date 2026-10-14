@@ -5,8 +5,9 @@ import urllib.request
 import pytest
 from conftest import good_script, make_spec
 
-from urh.runtime import Runtime, sign
+from urh.runtime import Runtime
 from urh.server import Api, make_server
+from urh.signing import sign
 
 TOKEN = "t" * 24
 AUTH = {"authorization": f"Bearer {TOKEN}"}

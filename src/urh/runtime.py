@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import datetime as dt
 import hashlib
-import hmac
 import json
 import logging
 import threading
@@ -28,7 +27,9 @@ from concurrent.futures import Future, ThreadPoolExecutor
 from typing import Any
 
 from .cron import Cron
+from .notify import Notifier
 from .orchestrator import Harness
+from .signing import verify
 from .spec import TaskSpec
 
 log = logging.getLogger("urh.runtime")
@@ -43,17 +44,21 @@ class WebhookRejected(Exception):
         self.status = status
 
 
-def sign(secret: str, body: bytes) -> str:
-    return "sha256=" + hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
-
-
 def _iso(ts: float) -> str:
     return dt.datetime.fromtimestamp(ts, dt.UTC).isoformat(timespec="seconds")
 
 
 class Runtime:
-    def __init__(self, harness: Harness, clock: Callable[[], float] = time.time):
+    def __init__(
+        self,
+        harness: Harness,
+        clock: Callable[[], float] = time.time,
+        notifiers: list[Notifier] | None = None,
+        notify_max_attempts: int = 8,
+    ):
         self.h = harness
+        self.notifiers = {n.name: n for n in notifiers or []}
+        self.notify_max_attempts = notify_max_attempts
         self.journal = harness.journal
         self.clock = clock
         self._pool = ThreadPoolExecutor(
@@ -113,7 +118,7 @@ class Runtime:
             raise WebhookRejected(404, "no such webhook")
         if not trig["enabled"]:
             raise WebhookRejected(409, "webhook disabled")
-        if not signature or not hmac.compare_digest(signature, sign(trig["secret"], body)):
+        if not verify(trig["secret"], body, signature):
             raise WebhookRejected(401, "bad signature")
         text = body.decode("utf-8", errors="replace")
         try:
@@ -153,10 +158,58 @@ class Runtime:
                 started.append(rid)
         return started
 
+    # ------------------------------------------------------------------ notifications
+    def notify_parks(self) -> list[str]:
+        """Tell a person about every open park that will not wake itself. Returns the keys sent this call."""
+        if not self.notifiers:
+            return []
+        parks = {p["id"]: p for p in self.journal.parks(status="open")}
+        for park in parks.values():
+            if park["preconditions"].get("wake_at") is None:
+                for channel in self.notifiers:
+                    self.journal.enqueue_notification(park["id"], channel)
+        sent = []
+        now = self.clock()
+        for row in self.journal.due_notifications(now):
+            park = parks.get(row["park_id"])
+            notifier = self.notifiers.get(row["channel"])
+            if park is None or notifier is None:  # answered meanwhile, or channel removed: nothing to say
+                self.journal.mark_notification(row["key"], ok=False, error="obsolete", give_up=True)
+                continue
+            run = self.journal.get_run(park["run_id"])
+            message = {
+                "event": "park",
+                "park_id": park["id"],
+                "run_id": park["run_id"],
+                "step_index": park["step_index"],
+                "reason": park["reason"],
+                "question": park["question"],
+                "goal": run.spec.get("goal"),
+            }
+            try:
+                notifier.send(row["key"], message)
+            except Exception as e:  # any failure: retry with backoff, never block the runtime
+                attempts = row["attempts"] + 1
+                give_up = attempts >= self.notify_max_attempts
+                self.journal.mark_notification(
+                    row["key"],
+                    ok=False,
+                    error=repr(e),
+                    retry_at=now + min(3600, 5 * 2**attempts),
+                    give_up=give_up,
+                )
+                if give_up:
+                    log.error("giving up notifying %s via %s: %r", park["id"], row["channel"], e)
+                continue
+            self.journal.mark_notification(row["key"], ok=True)
+            sent.append(row["key"])
+        return sent
+
     def tick(self) -> dict[str, list[str]]:
         fired = self.fire_due()
         woke = self.h.wake_due()
-        return {"fired": fired, "woke": woke, "started": self.dispatch()}
+        started = self.dispatch()
+        return {"fired": fired, "woke": woke, "started": started, "notified": self.notify_parks()}
 
     def inflight(self) -> list[str]:
         self._reap()

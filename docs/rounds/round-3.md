@@ -56,5 +56,5 @@ its own label.
 
 1. Live park rate and cost per verified run on the planner's bench tasks, against a plain loop.
 2. Grow the judge audit beyond one task: the gate thread's blind corpus covers 8.
-3. Outbound inbox notifications (an effect adapter per channel), so a needed park reaches a person
-   without polling.
+3. ~~Outbound park notifications~~: done in `notify.py`. Parks that need a person go out through a journaled
+   outbox (webhook, Slack-style or file), at least once, with backoff and a cap.
