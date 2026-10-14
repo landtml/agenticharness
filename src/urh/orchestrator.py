@@ -10,6 +10,7 @@ from the journal and the last verified commit (durability level D1).
 from __future__ import annotations
 
 import os
+import re
 import socket
 import threading
 import time
@@ -60,6 +61,9 @@ class HarnessConfig:
     vet_plan_checks: bool = True  # screen planner-written checks before they may pass a step
     outage_wake_s: float = 300.0  # an outage park wakes itself after this long
     use_judge: bool = True  # a model judge decides steps no script check covers
+    max_concurrent_calls: int | None = None  # provider calls in flight at once, across every run here
+    max_crashes: int = 3  # unexpected exceptions on one run before it parks as harness_error
+    escalation_max_fraction: float = 0.5  # an escalation may use at most this share of the remaining budget
     escalate: bool = True  # one attempt on the escalation model before repairs_exhausted parks
 
 
@@ -104,6 +108,7 @@ class Harness:
             retries=self.config.provider_retries,
             backoff_s=self.config.provider_backoff_s,
             prices=prices,
+            max_concurrent_calls=self.config.max_concurrent_calls,
         )
         if adapters is None:
             adapters = [OutboxFileAdapter(os.path.join(self.home, "outbox"))]
@@ -174,6 +179,23 @@ class Harness:
             return self._drive(run_id, epoch, ckpt)
         except LeaseLost:
             return "lease_lost"
+        except Exception as e:
+            # A harness bug, not a model failure. Journal it; a run that keeps crashing parks instead of looping.
+            self.journal.event(run_id, epoch, "harness_crash", error=repr(e)[:500])
+            crashes = sum(1 for ev in self.journal.events(run_id) if ev["kind"] == "harness_crash")
+            if crashes >= cfg.max_crashes:
+                run = self.journal.get_run(run_id)
+                attempts = self.journal.attempts(run_id)
+                self._park(
+                    run_id,
+                    epoch,
+                    attempts[-1]["step_index"] if attempts else 0,
+                    "harness_error",
+                    f"The harness crashed {crashes} times on this run; last error: {repr(e)[:300]}",
+                    run.verified_commit,
+                )
+                return "parked"
+            raise
         finally:
             hb.stop_event.set()
             hb.join(timeout=5)
@@ -230,6 +252,23 @@ class Harness:
             return False
         self.journal.replan_step(run_id, epoch, i, step, manager.source)
         return True
+
+    def _exhausted_before(self, run_id: str, i: int) -> bool:
+        """True once an earlier step on this run used up its repairs: a second struggling step means the
+        plan, not the worker, is the likelier problem."""
+        return any(
+            e["kind"] in ("escalated", "step_replanned") and e.get("step_index", i) < i
+            for e in self.journal.events(run_id)
+        )
+
+    def _standing_requirements(self, run_id: str, spec: TaskSpec, i: int) -> list[str]:
+        """What the judge must keep enforcing: the goal, constraints, and every earlier step's instructions."""
+        reqs = [f"Goal: {spec.goal}", *(f"Constraint: {c}" for c in spec.constraints)]
+        for k in range(i):
+            plan = self.journal.planned_step(run_id, k) or {}
+            if plan.get("instructions"):
+                reqs.append(f"Step {k + 1} ({plan.get('title', '')}): {plan['instructions']}")
+        return reqs
 
     def _manager_for(self, spec: TaskSpec) -> Manager:
         if spec.steps is not None:
@@ -371,14 +410,22 @@ class Harness:
                 continue
             failed = [a for a in prior if a["status"] == "fail"]
             role = "worker"
-            if len(failed) > spec.max_repairs and self._may_escalate(run_id, i, pins, len(failed), spec):
-                role = "escalation"
-                self.journal.event(
-                    run_id, epoch, "escalated", step_index=i, model=pins["models"]["escalation"]
-                )
-            elif len(failed) > spec.max_repairs:
-                if self._replan(manager, run_id, epoch, pins, spec, i, failed, ckpt, verified):
+            if len(failed) > spec.max_repairs:
+                # A wrong plan goes straight back to the planner; a right plan with a weak worker escalates
+                # first. Either way, parking is the last resort.
+                shaped = plan_shaped(failed) or self._exhausted_before(run_id, i)
+                if shaped and self._replan(manager, run_id, epoch, pins, spec, i, failed, ckpt, verified):
                     continue
+                if self._may_escalate(run_id, i, pins, len(failed), spec):
+                    role = "escalation"
+                    self.journal.event(
+                        run_id, epoch, "escalated", step_index=i, model=pins["models"]["escalation"]
+                    )
+                elif not shaped and self._replan(
+                    manager, run_id, epoch, pins, spec, i, failed, ckpt, verified
+                ):
+                    continue
+            if len(failed) > spec.max_repairs and role != "escalation":
                 return self._park(
                     run_id,
                     epoch,
@@ -475,6 +522,7 @@ class Harness:
                         parent=verified,
                         candidate=commit,
                         step=step,
+                        requirements=self._standing_requirements(run_id, spec, i),
                     )
                 except (BudgetExceeded, ProviderDown) as e:
                     verdict = Verdict("unsure", f"judge unavailable: {type(e).__name__}")
@@ -522,9 +570,43 @@ class Harness:
             return False
         if failures != spec.max_repairs + 1:
             return False
-        return not any(
-            e["kind"] == "escalated" and e.get("step_index") == i for e in self.journal.events(run_id)
+        if any(e["kind"] == "escalated" and e.get("step_index") == i for e in self.journal.events(run_id)):
+            return False
+        return self._escalation_affordable(run_id, i, pins)
+
+    def _escalation_affordable(self, run_id: str, i: int, pins: dict[str, Any]) -> bool:
+        """Escalate only when it leaves room for what comes after it (a replan and one more attempt).
+
+        Live runs showed escalation eating most of a run's budget and leaving the replan nothing,
+        so the run parked on budget instead of on the step. The cost estimate is this step's mean
+        worker attempt, scaled by the escalation model's input price over the worker's.
+        """
+        run = self.journal.get_run(run_id)
+        remaining = run.budget_usd - run.spent_usd - run.reserved_usd
+        calls = self.journal.model_calls(run_id)
+        per_attempt: dict[int, float] = {}
+        for c in calls:
+            if c["step_index"] == i and c["role"] == "worker":
+                per_attempt[c["attempt"]] = per_attempt.get(c["attempt"], 0.0) + (c["cost_usd"] or 0.0)
+        attempt_cost = sum(per_attempt.values()) / len(per_attempt) if per_attempt else 0.0
+        prices = self.gateway.prices
+        ratio = prices.price(pins["models"]["escalation"]).input / max(
+            prices.price(pins["models"]["worker"]).input, 1e-9
         )
+        escalation = attempt_cost * ratio
+        manager = [c["cost_usd"] or 0.0 for c in calls if c["role"] == "manager"]
+        after = attempt_cost + (max(manager) if manager else attempt_cost)
+        ok = escalation <= self.config.escalation_max_fraction * remaining and escalation + after <= remaining
+        if not ok:
+            self.journal.event(
+                run_id,
+                run.lease_epoch,
+                "escalation_skipped",
+                step_index=i,
+                estimate_usd=round(escalation, 6),
+                remaining_usd=round(remaining, 6),
+            )
+        return ok
 
     def _commit_pass(
         self,
@@ -563,6 +645,21 @@ class Harness:
 
 
 EFFORT_LADDER = ["low", "medium", "high"]
+
+
+_PLAN_SHAPED = re.compile(
+    r"missing file|No module named|ImportError|cannot import name|has no attribute|not defined|"
+    r"FileNotFoundError|expected files are missing|plan checks cannot tell",
+    re.I,
+)
+
+
+def plan_shaped(failed: list[dict[str, Any]]) -> bool:
+    """Do the last failures look like a plan problem (missing file or symbol, a check that does not
+    fit the spec) rather than a logic bug a stronger worker could fix?"""
+    recent = [f for a in failed[-2:] for f in ((a.get("verdict") or {}).get("failures") or [])]
+    recent = [f for f in recent if f != "no progress"]
+    return bool(recent) and all(_PLAN_SHAPED.search(f) for f in recent)
 
 
 def escalate_effort(effort: str, repairs: int) -> str:

@@ -299,3 +299,33 @@ def test_untrusted_plan_checks_send_the_step_back_to_the_planner(make, hidden):
     assert [e["why"] for e in h.journal.events(rid) if e["kind"] == "plan"] == ["plan", "replan"]
     assert "cannot tell a broken step" in p.planner_prompts[1]
     assert len(calls) == 2  # the mul step has spec checks, so its plan checks are not vetted
+
+
+def test_plan_shaped_failures():
+    from urh.orchestrator import plan_shaped
+
+    def f(*xs):
+        return [{"verdict": {"failures": list(xs)}}]
+
+    assert plan_shaped(f("missing file: mul.py"))
+    assert plan_shaped(f("plan1: ImportError: cannot import name 'mul'", "no progress"))
+    assert not plan_shaped(f("test_mul.py::test_mul"))
+    assert not plan_shaped(f("missing file: mul.py", "test_mul.py::test_mul"))
+    assert not plan_shaped([])
+
+
+def test_plan_shaped_failure_replans_before_escalating(make, hidden):
+    fixed = mplan(
+        [
+            pstep("add", spec_checks=["add"]),
+            pstep("mul", instructions="Write mul.py (v2): multiply", spec_checks=["add", "mul"]),
+        ]
+    )
+    # The worker never writes mul.py, so every failure names the missing file: a plan problem.
+    script = steps_script(**{"2": [[{"write": "other.py", "content": "x = 1\n"}], [{"finish": "mul"}]]})
+    script["by_marker"] = {"(v2)": [[{"write": "mul.py", "content": MUL_PY}], [{"finish": "mul v2"}]]}
+    h, p = make(script, [ONE, fixed])
+    rid = h.submit(make_spec(hidden, steps=None))
+    assert h.run(rid) == "done"
+    kinds = [e["kind"] for e in h.journal.events(rid)]
+    assert "step_replanned" in kinds and "escalated" not in kinds

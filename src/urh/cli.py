@@ -6,11 +6,11 @@ import argparse
 import json
 import os
 import sys
-import time
 
-from . import stats
+from . import notify, server, stats
 from .gateway import AnthropicProvider, Provider
 from .orchestrator import Harness, HarnessConfig
+from .runtime import Runtime
 from .spec import TaskSpec
 
 
@@ -73,8 +73,31 @@ def main(argv: list[str] | None = None) -> int:
     r = sub.add_parser("run", help="drive one run, or every runnable run")
     r.add_argument("run_id", nargs="?")
 
-    d = sub.add_parser("daemon", help="keep driving runnable runs")
+    d = sub.add_parser("daemon", help="fire triggers, wake parks and drive runnable runs, without an API")
     d.add_argument("--interval", type=float, default=5.0)
+    d.add_argument("--workers", type=int, help="runs driven at once (default: config max_active_runs)")
+
+    sv = sub.add_parser("serve", help="the daemon plus the HTTP API (token from URH_API_TOKEN)")
+    sv.add_argument("--host", default=os.environ.get("URH_HOST", "127.0.0.1"))
+    sv.add_argument("--port", type=int, default=int(os.environ.get("URH_PORT", "8787")))
+    sv.add_argument("--interval", type=float, default=1.0)
+    sv.add_argument("--workers", type=int)
+
+    tr = sub.add_parser("trigger", help="manage cron and webhook triggers")
+    trs = tr.add_subparsers(dest="trigger_cmd", required=True)
+    tc = trs.add_parser("add-cron", help="start a run from SPEC on a cron schedule (UTC)")
+    tc.add_argument("name")
+    tc.add_argument("schedule", help="5-field cron or @hourly/@daily/...")
+    tc.add_argument("spec")
+    tc.add_argument("--budget", type=float)
+    tw = trs.add_parser("add-webhook", help="start a run from SPEC on each signed POST /hooks/NAME")
+    tw.add_argument("name")
+    tw.add_argument("spec")
+    tw.add_argument("--secret-env", default="URH_WEBHOOK_SECRET", help="env var holding the HMAC secret")
+    tw.add_argument("--budget", type=float)
+    trs.add_parser("list")
+    for verb in ("rm", "enable", "disable"):
+        trs.add_parser(verb).add_argument("name")
 
     st = sub.add_parser("status", help="show runs")
     st.add_argument("run_id", nargs="?")
@@ -102,10 +125,39 @@ def main(argv: list[str] | None = None) -> int:
         else:
             for rid, status in h.run_pending().items():
                 print(rid, status)
-    elif args.cmd == "daemon":
-        while True:
-            h.run_pending()
-            time.sleep(args.interval)
+    elif args.cmd in ("daemon", "serve"):
+        if args.workers:
+            h.config.max_active_runs = args.workers
+        rt = Runtime(h, notifiers=notify.from_env())
+        if args.cmd == "daemon":
+            try:
+                rt.serve(args.interval)
+            except KeyboardInterrupt:
+                rt.stop()
+        else:
+            token = os.environ.get("URH_API_TOKEN", "")
+            if len(token) < 16:
+                raise SystemExit("set URH_API_TOKEN (16+ characters) to serve the API")
+            server.serve(rt, token, args.host, args.port, args.interval)
+    elif args.cmd == "trigger":
+        rt = Runtime(h)
+        tc_ = args.trigger_cmd
+        if tc_ == "add-cron":
+            print(rt.add_cron(args.name, args.schedule, TaskSpec.load(args.spec), args.budget))
+        elif tc_ == "add-webhook":
+            secret = os.environ.get(args.secret_env, "")
+            print(rt.add_webhook(args.name, TaskSpec.load(args.spec), secret, args.budget))
+        elif tc_ == "list":
+            for t in j.list_triggers():
+                print(
+                    json.dumps(
+                        {k: t[k] for k in ("name", "kind", "schedule", "enabled", "next_fire_at", "fired")}
+                    )
+                )
+        elif tc_ == "rm":
+            j.delete_trigger(args.name)
+        else:
+            j.set_trigger_enabled(args.name, tc_ == "enable")
     elif args.cmd == "status":
         runs = [j.get_run(args.run_id)] if args.run_id else j.list_runs()
         for run in runs:

@@ -101,6 +101,17 @@ def test_escalation_rescues_step_without_a_person(harness_factory, hidden):
     assert [a["status"] for a in h.journal.attempts(rid, 0)] == ["fail", "fail", "pass"]
 
 
+def test_escalation_is_skipped_when_it_would_starve_what_comes_after(harness_factory, hidden):
+    bad = [[{"write": "add.py", "content": "def add(a, b):\n    return 0\n"}], [{"finish": "x"}]]
+    h = harness_factory(good_script(**{"1": bad, "1@2": bad}), escalation_max_fraction=0.0)
+    rid = h.submit(make_spec(hidden, max_repairs=1))
+    assert h.run(rid) == "parked"
+    assert h.journal.parks(rid)[0]["reason"] == "repairs_exhausted"
+    assert [a["status"] for a in h.journal.attempts(rid, 0)] == ["fail", "fail"]  # no escalation attempt
+    skipped = [e for e in h.journal.events(rid) if e["kind"] == "escalation_skipped"]
+    assert len(skipped) == 1 and skipped[0]["estimate_usd"] > 0
+
+
 def test_park_answer_is_claimed_once_and_reaches_the_worker(harness_factory, hidden):
     bad = [[{"write": "add.py", "content": "def add(a, b):\n    return 0\n"}], [{"finish": "x"}]]
     h = harness_factory(good_script(**{"1": bad}), escalate=False)
@@ -234,3 +245,16 @@ def test_judge_decides_step_no_script_covers(harness_factory, hidden):
     assert len(judge_calls) == 2
     req = h.blobs.get_bytes(judge_calls[0]["request_blob"]).decode()
     assert "mul written" not in req  # blind to the worker's own summary
+
+
+def test_a_run_that_keeps_crashing_parks_instead_of_looping(harness_factory, hidden, monkeypatch):
+    h = harness_factory(good_script())
+    rid = h.submit(make_spec(hidden))
+    monkeypatch.setattr(h, "_drive", lambda *a: (_ for _ in ()).throw(RuntimeError("harness bug")))
+    for _ in range(2):
+        with pytest.raises(RuntimeError):
+            h.run(rid)
+    assert h.run(rid) == "parked"
+    (park,) = h.journal.parks(rid)
+    assert park["reason"] == "harness_error" and "harness bug" in park["question"]
+    assert rid not in h.runnable()

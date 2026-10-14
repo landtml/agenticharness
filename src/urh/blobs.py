@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import tempfile
 from typing import Any
 
 
@@ -21,8 +22,9 @@ class BlobStore:
         path = self._path(digest)
         if not os.path.exists(path):
             os.makedirs(os.path.dirname(path), exist_ok=True)
-            tmp = f"{path}.tmp.{os.getpid()}"
-            with open(tmp, "wb") as f:
+            # unique per writer: threads and processes may store the same blob at once
+            fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path), prefix=f"{digest[:8]}.", suffix=".tmp")
+            with os.fdopen(fd, "wb") as f:
                 f.write(data)
                 f.flush()
                 os.fsync(f.fileno())

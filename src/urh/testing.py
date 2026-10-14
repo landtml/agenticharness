@@ -50,7 +50,9 @@ class ScriptedProvider:
             self.fail_calls -= 1
             raise ProviderUnavailable("scripted outage")
         usage = {
-            "input_tokens": len(json.dumps(request.get("messages"), default=str)) // 4,
+            "input_tokens": 10_000_000
+            if self.script.get("huge_usage")
+            else len(json.dumps(request.get("messages"), default=str)) // 4,
             "output_tokens": 40,
             "cache_read_input_tokens": 0,
             "cache_creation_input_tokens": 0,

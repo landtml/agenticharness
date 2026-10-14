@@ -108,6 +108,7 @@ def run_task(name: str, provider: str, home: str, budget: float, planner_effort:
         "attempts": len([c for c in calls if c["role"] == "worker"]),
         "auto_wakes": wakes,
         "escalations": sum(1 for e in events if e["kind"] == "escalated"),
+        "escalations_skipped": sum(1 for e in events if e["kind"] == "escalation_skipped"),
         "stats": journal_stats(h.journal),
     }
 

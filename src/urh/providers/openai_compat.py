@@ -12,7 +12,7 @@ import urllib.error
 import urllib.request
 from typing import Any
 
-from .base import ProviderResponse, ProviderUnavailable
+from .base import ProviderResponse, ProviderUnavailable, RateLimited, parse_retry_after
 
 _STOP = {"stop": "end_turn", "tool_calls": "tool_use", "length": "max_tokens", "content_filter": "refusal"}
 
@@ -148,7 +148,9 @@ class OpenAICompatibleProvider:
             with urllib.request.urlopen(req, timeout=self.timeout) as resp:  # noqa: S310 (configured endpoint)
                 return from_chat_completions(json.loads(resp.read()))
         except urllib.error.HTTPError as e:
-            if e.code >= 500 or e.code in (408, 409, 429):
+            if e.code == 429:
+                raise RateLimited("HTTP 429", parse_retry_after(e.headers.get("retry-after"))) from e
+            if e.code >= 500 or e.code in (408, 409):
                 raise ProviderUnavailable(f"HTTP {e.code}") from e
             raise
         except (urllib.error.URLError, TimeoutError) as e:

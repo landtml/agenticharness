@@ -160,3 +160,86 @@ def test_circuit_breaker_opens_after_threshold():
     b.record(False)
     b.record(False)
     assert b.allow() is False
+
+
+class _Limited:
+    name = "anthropic"
+
+    def __init__(self, limited, then):
+        self.limited, self.then, self.calls = limited, then, 0
+
+    def complete(self, request):
+        from urh.providers.base import RateLimited
+
+        self.calls += 1
+        if self.limited > 0:
+            self.limited -= 1
+            raise RateLimited("HTTP 429", retry_after=7.0)
+        return self.then
+
+
+def test_rate_limits_wait_as_told_and_never_trip_the_breaker(tmp_path):
+    from urh.blobs import BlobStore
+    from urh.gateway import CallContext, ModelGateway
+    from urh.journal import Journal
+    from urh.providers.base import ProviderResponse
+
+    j = Journal(str(tmp_path / "j.sqlite"))
+    ok = ProviderResponse(
+        [{"type": "text", "text": "hi"}],
+        "end_turn",
+        {"input_tokens": 1, "output_tokens": 1},
+        "claude-haiku-5-5",
+    )
+    provider = _Limited(5, ok)
+    slept = []
+    gw = ModelGateway(j, BlobStore(str(tmp_path / "b")), provider, retries=1, sleep=slept.append)
+    pins = gw.default_pins()
+    rid, _ = j.create_run({"goal": "g"}, pins, 1.0)
+    epoch = j.acquire_lease(rid, "me", 30)
+    resp = gw.call(CallContext(rid, epoch, 0, 1, "worker", 0), pins, {"max_tokens": 10, "messages": []})
+    assert resp.content[0]["text"] == "hi"
+    assert slept == [7.0] * 5  # five 429s with retry_after, more than retries=1 would allow for outages
+    assert not gw.breaker.is_open() and gw.breaker.failures == 0
+
+
+def test_concurrent_call_cap_is_shared_across_threads(tmp_path):
+    import threading
+    import time
+
+    from urh.blobs import BlobStore
+    from urh.gateway import CallContext, ModelGateway
+    from urh.journal import Journal
+    from urh.providers.base import ProviderResponse
+
+    live, peak, lock = [0], [0], threading.Lock()
+
+    class Slow:
+        name = "anthropic"
+
+        def complete(self, request):
+            with lock:
+                live[0] += 1
+                peak[0] = max(peak[0], live[0])
+            time.sleep(0.05)
+            with lock:
+                live[0] -= 1
+            return ProviderResponse([{"type": "text", "text": "x"}], "end_turn", {}, "claude-haiku-5-5")
+
+    j = Journal(str(tmp_path / "j.sqlite"))
+    gw = ModelGateway(j, BlobStore(str(tmp_path / "b")), Slow(), max_concurrent_calls=2)
+    pins = gw.default_pins()
+    rid, _ = j.create_run({"goal": "g"}, pins, 10.0)
+    epoch = j.acquire_lease(rid, "me", 30)
+    threads = [
+        threading.Thread(
+            target=gw.call,
+            args=(CallContext(rid, epoch, 0, 1, "worker", k), pins, {"max_tokens": 5, "messages": []}),
+        )
+        for k in range(6)
+    ]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert peak[0] == 2

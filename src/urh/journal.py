@@ -20,7 +20,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Any
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS meta (
@@ -125,6 +125,31 @@ CREATE TABLE IF NOT EXISTS parks (
     created_at    REAL NOT NULL,
     updated_at    REAL NOT NULL
 );
+CREATE TABLE IF NOT EXISTS triggers (
+    id            TEXT PRIMARY KEY,
+    name          TEXT NOT NULL UNIQUE,
+    kind          TEXT NOT NULL,             -- cron | webhook
+    schedule      TEXT,                      -- cron expression (cron triggers)
+    spec_json     TEXT NOT NULL,             -- the run template
+    budget_usd    REAL NOT NULL,
+    secret        TEXT,                      -- HMAC key (webhook triggers)
+    enabled       INTEGER NOT NULL DEFAULT 1,
+    next_fire_at  REAL,
+    last_fired_at REAL,
+    fired         INTEGER NOT NULL DEFAULT 0,
+    created_at    REAL NOT NULL
+);
+CREATE TABLE IF NOT EXISTS notifications (
+    key           TEXT PRIMARY KEY,          -- <park_id>:<channel>; also the receiver's Idempotency-Key
+    park_id       TEXT NOT NULL,
+    channel       TEXT NOT NULL,
+    status        TEXT NOT NULL,             -- pending | sent | failed
+    attempts      INTEGER NOT NULL DEFAULT 0,
+    next_try_at   REAL NOT NULL,
+    last_error    TEXT,
+    created_at    REAL NOT NULL,
+    sent_at       REAL
+);
 """
 
 
@@ -194,12 +219,31 @@ class Journal:
         self.path = os.fspath(path)
         os.makedirs(os.path.dirname(os.path.abspath(self.path)), exist_ok=True)
         self._lock = threading.RLock()
-        self._conn = sqlite3.connect(self.path, timeout=30, isolation_level=None, check_same_thread=False)
-        self._conn.row_factory = sqlite3.Row
-        self._conn.execute("PRAGMA journal_mode=WAL")
-        self._conn.execute("PRAGMA synchronous=FULL")
-        self._conn.execute("PRAGMA busy_timeout=30000")
+        # One connection per thread: a shared connection lets concurrent readers interleave on its
+        # cursor and read each other's rows. Writers still serialize (in-process lock + BEGIN IMMEDIATE).
+        self._local = threading.local()
+        self._all: list[sqlite3.Connection] = []
+        self._closed = False
         self._migrate()
+
+    def _connect(self) -> sqlite3.Connection:
+        conn = sqlite3.connect(self.path, timeout=30, isolation_level=None, check_same_thread=False)
+        conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA synchronous=FULL")
+        conn.execute("PRAGMA busy_timeout=30000")
+        return conn
+
+    @property
+    def _conn(self) -> sqlite3.Connection:
+        conn = getattr(self._local, "conn", None)
+        if conn is None:
+            if self._closed:
+                raise sqlite3.ProgrammingError("journal is closed")
+            conn = self._local.conn = self._connect()
+            with self._lock:
+                self._all.append(conn)
+        return conn
 
     # ------------------------------------------------------------------ plumbing
     @contextmanager
@@ -227,11 +271,16 @@ class Journal:
                 raise RuntimeError(
                     f"journal schema {row['value']} is newer than this harness ({SCHEMA_VERSION}); refusing to open"
                 )
-            # Older versions would be migrated here, explicitly, one version at a time.
+            elif int(row["value"]) < SCHEMA_VERSION:
+                # 1 -> 2 only added the triggers table, which the idempotent DDL above created.
+                c.execute("UPDATE meta SET value=? WHERE key='schema_version'", (str(SCHEMA_VERSION),))
 
     def close(self) -> None:
         with self._lock:
-            self._conn.close()
+            self._closed = True
+            for conn in self._all:
+                conn.close()
+            self._all.clear()
 
     def schema_version(self) -> int:
         row = self._conn.execute("SELECT value FROM meta WHERE key='schema_version'").fetchone()
@@ -835,3 +884,134 @@ class Journal:
             d["preconditions"] = json.loads(d["preconditions"])
             out.append(d)
         return out
+
+    # ------------------------------------------------------------------ triggers
+    def add_trigger(
+        self,
+        name: str,
+        kind: str,
+        spec: dict[str, Any],
+        budget_usd: float,
+        schedule: str | None = None,
+        secret: str | None = None,
+        next_fire_at: float | None = None,
+    ) -> str:
+        if kind not in ("cron", "webhook"):
+            raise ValueError(f"unknown trigger kind {kind!r}")
+        tid = new_id("trg")
+        with self.tx() as c:
+            c.execute(
+                "INSERT INTO triggers(id, name, kind, schedule, spec_json, budget_usd, secret, next_fire_at,"
+                " created_at) VALUES (?,?,?,?,?,?,?,?,?)",
+                (
+                    tid,
+                    name,
+                    kind,
+                    schedule,
+                    json.dumps(spec, sort_keys=True),
+                    budget_usd,
+                    secret,
+                    next_fire_at,
+                    _now(),
+                ),
+            )
+        return tid
+
+    @staticmethod
+    def _trigger(row: sqlite3.Row) -> dict[str, Any]:
+        d = dict(row)
+        d["spec"] = json.loads(d.pop("spec_json"))
+        d["enabled"] = bool(d["enabled"])
+        return d
+
+    def get_trigger(self, name: str) -> dict[str, Any] | None:
+        row = self._conn.execute("SELECT * FROM triggers WHERE name=? OR id=?", (name, name)).fetchone()
+        return None if row is None else self._trigger(row)
+
+    def list_triggers(self) -> list[dict[str, Any]]:
+        return [self._trigger(r) for r in self._conn.execute("SELECT * FROM triggers ORDER BY created_at")]
+
+    def due_triggers(self, now: float) -> list[dict[str, Any]]:
+        rows = self._conn.execute(
+            "SELECT * FROM triggers WHERE kind='cron' AND enabled=1 AND next_fire_at<=? ORDER BY next_fire_at",
+            (now,),
+        ).fetchall()
+        return [self._trigger(r) for r in rows]
+
+    def set_trigger_enabled(self, name: str, enabled: bool) -> None:
+        with self.tx() as c:
+            if (
+                c.execute(
+                    "UPDATE triggers SET enabled=? WHERE name=? OR id=?", (int(enabled), name, name)
+                ).rowcount
+                == 0
+            ):
+                raise KeyError(name)
+
+    def delete_trigger(self, name: str) -> None:
+        with self.tx() as c:
+            if c.execute("DELETE FROM triggers WHERE name=? OR id=?", (name, name)).rowcount == 0:
+                raise KeyError(name)
+
+    def advance_trigger(
+        self, trigger_id: str, expected_next: float | None, next_fire_at: float | None
+    ) -> bool:
+        """Move a trigger past a fire. CAS on ``next_fire_at`` so two schedulers cannot both advance it."""
+        with self.tx() as c:
+            cur = c.execute(
+                "UPDATE triggers SET next_fire_at=?, last_fired_at=?, fired=fired+1 WHERE id=? AND next_fire_at IS ?",
+                (next_fire_at, _now(), trigger_id, expected_next),
+            )
+            return cur.rowcount == 1
+
+    def find_run_by_dedupe(self, dedupe_key: str) -> str | None:
+        row = self._conn.execute("SELECT id FROM runs WHERE dedupe_key=?", (dedupe_key,)).fetchone()
+        return None if row is None else row["id"]
+
+    # ------------------------------------------------------------------ notification outbox
+    def enqueue_notification(self, park_id: str, channel: str) -> bool:
+        key = f"{park_id}:{channel}"
+        with self.tx() as c:
+            cur = c.execute(
+                "INSERT OR IGNORE INTO notifications(key, park_id, channel, status, next_try_at, created_at)"
+                " VALUES (?,?,?,?,?,?)",
+                (key, park_id, channel, "pending", _now(), _now()),
+            )
+            return cur.rowcount == 1
+
+    def due_notifications(self, now: float) -> list[dict[str, Any]]:
+        rows = self._conn.execute(
+            "SELECT * FROM notifications WHERE status='pending' AND next_try_at<=? ORDER BY created_at",
+            (now,),
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+    def notifications(self, park_id: str | None = None) -> list[dict[str, Any]]:
+        if park_id is None:
+            rows = self._conn.execute("SELECT * FROM notifications ORDER BY created_at").fetchall()
+        else:
+            rows = self._conn.execute(
+                "SELECT * FROM notifications WHERE park_id=? ORDER BY created_at", (park_id,)
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+    def mark_notification(
+        self,
+        key: str,
+        ok: bool,
+        error: str | None = None,
+        retry_at: float | None = None,
+        give_up: bool = False,
+    ) -> None:
+        with self.tx() as c:
+            if ok:
+                c.execute(
+                    "UPDATE notifications SET status='sent', attempts=attempts+1, sent_at=?, last_error=NULL"
+                    " WHERE key=?",
+                    (_now(), key),
+                )
+            else:
+                c.execute(
+                    "UPDATE notifications SET status=?, attempts=attempts+1, last_error=?, next_try_at=? WHERE key=?",
+                    ("failed" if give_up else "pending", (error or "")[:500], retry_at or _now(), key),
+                )

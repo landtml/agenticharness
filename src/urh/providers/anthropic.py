@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from .base import ProviderResponse, ProviderUnavailable
+from .base import ProviderResponse, ProviderUnavailable, RateLimited, parse_retry_after
 
 
 def to_messages_api(request: dict[str, Any]) -> dict[str, Any]:
@@ -35,7 +35,9 @@ class AnthropicProvider:
 
         try:
             resp = self.client.messages.create(**to_messages_api(request))
-        except (anthropic.APIConnectionError, anthropic.RateLimitError, anthropic.InternalServerError) as e:
+        except anthropic.RateLimitError as e:
+            raise RateLimited(str(e), parse_retry_after(e.response.headers.get("retry-after"))) from e
+        except (anthropic.APIConnectionError, anthropic.InternalServerError) as e:
             raise ProviderUnavailable(str(e)) from e
         except anthropic.APIStatusError as e:
             if e.status_code >= 500 or e.status_code in (408, 409, 529):

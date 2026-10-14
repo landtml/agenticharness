@@ -22,6 +22,6 @@ Canonical response: :class:`ProviderResponse` with the same block types and a
 ``pause_turn``.
 """
 
-from .base import Provider, ProviderDown, ProviderResponse, ProviderUnavailable
+from .base import Provider, ProviderDown, ProviderResponse, ProviderUnavailable, RateLimited
 
-__all__ = ["Provider", "ProviderDown", "ProviderResponse", "ProviderUnavailable"]
+__all__ = ["Provider", "ProviderDown", "ProviderResponse", "ProviderUnavailable", "RateLimited"]
