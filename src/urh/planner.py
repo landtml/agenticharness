@@ -132,7 +132,7 @@ def plan_errors(plan: Plan, spec_check_names: list[str]) -> list[str]:
         if seen_empty and has:
             errs.append(f"milestone {m!r} has steps but an earlier milestone has none")
         seen_empty = seen_empty or not has
-    if spec_check_names and plan.steps and not seen_empty:   # fully expanded: the end must meet the spec
+    if spec_check_names and plan.steps and not seen_empty:  # fully expanded: the end must meet the spec
         last = plan.steps[-1]
         missing = [c for c in spec_check_names if c not in last.spec_checks]
         if missing:
@@ -160,20 +160,39 @@ class PlanningManager:
 
     source = "planner"
 
-    def __init__(self, gateway: ModelGateway, effort: str = "high", max_replans: int = 3,
-                 max_plan_calls: int = 12):
+    def __init__(
+        self, gateway: ModelGateway, effort: str = "high", max_replans: int = 3, max_plan_calls: int = 12
+    ):
         self.gateway = gateway
         self.effort = effort
         self.max_replans = max_replans
         self.max_plan_calls = max_plan_calls
 
     # -- Manager protocol ------------------------------------------------------------
-    def next_step(self, *, run_id: str, epoch: int, pins: dict[str, Any], spec: TaskSpec, step_index: int,
-                  history: list[dict[str, Any]], files: list[str], **_: Any) -> dict[str, Any]:
+    def next_step(
+        self,
+        *,
+        run_id: str,
+        epoch: int,
+        pins: dict[str, Any],
+        spec: TaskSpec,
+        step_index: int,
+        history: list[dict[str, Any]],
+        files: list[str],
+        **_: Any,
+    ) -> dict[str, Any]:
         plan = self.current_plan(run_id)
         if plan is None:
-            plan = self._call(run_id, epoch, pins, spec, step_index, "plan",
-                              self._plan_prompt(spec), check=lambda p: plan_errors(p, _names(spec)))
+            plan = self._call(
+                run_id,
+                epoch,
+                pins,
+                spec,
+                step_index,
+                "plan",
+                self._plan_prompt(spec),
+                check=lambda p: plan_errors(p, _names(spec)),
+            )
         while step_index >= len(plan.steps):
             pending = [m for m in plan.milestones if not plan.milestone_steps(m.id)]
             if not pending:
@@ -187,17 +206,36 @@ class PlanningManager:
                     errs.append(f"milestone {mid!r} still has no steps")
                 return errs
 
-            plan = self._call(run_id, epoch, pins, spec, step_index, "expand",
-                              self._expand_prompt(spec, plan, step_index, mid, history, files), check=check)
+            plan = self._call(
+                run_id,
+                epoch,
+                pins,
+                spec,
+                step_index,
+                "expand",
+                self._expand_prompt(spec, plan, step_index, mid, history, files),
+                check=check,
+            )
         return to_step_spec(plan.steps[step_index], plan, step_index).to_dict()
 
-    def replan(self, *, run_id: str, epoch: int, pins: dict[str, Any], spec: TaskSpec, step_index: int,
-               failures: list[str], files: list[str], **_: Any) -> dict[str, Any] | None:
+    def replan(
+        self,
+        *,
+        run_id: str,
+        epoch: int,
+        pins: dict[str, Any],
+        spec: TaskSpec,
+        step_index: int,
+        failures: list[str],
+        files: list[str],
+        **_: Any,
+    ) -> dict[str, Any] | None:
         plan = self.current_plan(run_id)
         if plan is None or step_index >= len(plan.steps):
             return None
-        replans = sum(1 for e in self.gateway.journal.events(run_id)
-                      if e["kind"] == "plan" and e.get("why") == "replan")
+        replans = sum(
+            1 for e in self.gateway.journal.events(run_id) if e["kind"] == "plan" and e.get("why") == "replan"
+        )
         if replans >= self.max_replans:
             return None
         old = plan
@@ -210,8 +248,16 @@ class PlanningManager:
                 errs.append(f"step {step_index + 1} must change: the same step already failed")
             return errs
 
-        plan = self._call(run_id, epoch, pins, spec, step_index, "replan",
-                          self._replan_prompt(spec, plan, step_index, failures, files), check=check)
+        plan = self._call(
+            run_id,
+            epoch,
+            pins,
+            spec,
+            step_index,
+            "replan",
+            self._replan_prompt(spec, plan, step_index, failures, files),
+            check=check,
+        )
         return to_step_spec(plan.steps[step_index], plan, step_index).to_dict()
 
     # -- state -----------------------------------------------------------------------
@@ -220,8 +266,17 @@ class PlanningManager:
         return Plan.model_validate(plans[-1]["plan"]) if plans else None
 
     # -- the one model call, retried once with the validator's errors -----------------
-    def _call(self, run_id: str, epoch: int, pins: dict[str, Any], spec: TaskSpec, step_index: int, why: str,
-              prompt: str, check) -> Plan:
+    def _call(
+        self,
+        run_id: str,
+        epoch: int,
+        pins: dict[str, Any],
+        spec: TaskSpec,
+        step_index: int,
+        why: str,
+        prompt: str,
+        check,
+    ) -> Plan:
         calls = sum(1 for c in self.gateway.journal.model_calls(run_id) if c["role"] == "manager")
         errors: list[str] = []
         for k in range(2):
@@ -231,13 +286,19 @@ class PlanningManager:
             if errors:
                 text += "\n\nYour previous answer was rejected:\n- " + "\n- ".join(errors[:12])
             ctx = CallContext(run_id, epoch, step_index, 0, "manager", calls + k)
-            resp = self.gateway.call(ctx, pins, {
-                "max_tokens": 16000,
-                "system": [{"type": "text", "text": PLANNER_SYSTEM, "cache_control": {"type": "ephemeral"}}],
-                "messages": [{"role": "user", "content": text}],
-                "effort": self.effort,
-                "response_schema": PLAN_SCHEMA,
-            })
+            resp = self.gateway.call(
+                ctx,
+                pins,
+                {
+                    "max_tokens": 16000,
+                    "system": [
+                        {"type": "text", "text": PLANNER_SYSTEM, "cache_control": {"type": "ephemeral"}}
+                    ],
+                    "messages": [{"role": "user", "content": text}],
+                    "effort": self.effort,
+                    "response_schema": PLAN_SCHEMA,
+                },
+            )
             raw = "".join(b.get("text", "") for b in resp.content if b.get("type") == "text")
             try:
                 plan = Plan.model_validate(json.loads(_strip_fence(raw)))
@@ -246,8 +307,9 @@ class PlanningManager:
                 continue
             errors = check(plan)
             if not errors:
-                self.gateway.journal.event(run_id, epoch, "plan", why=why, step_index=step_index,
-                                           plan=plan.model_dump())
+                self.gateway.journal.event(
+                    run_id, epoch, "plan", why=why, step_index=step_index, plan=plan.model_dump()
+                )
                 return plan
         raise PlanRejected("; ".join(errors))
 
@@ -266,36 +328,45 @@ class PlanningManager:
     def _plan_prompt(self, spec: TaskSpec) -> str:
         return self._task(spec) + "\n\nWrite the plan."
 
-    def _expand_prompt(self, spec: TaskSpec, plan: Plan, n: int, mid: str, history: list[dict[str, Any]],
-                       files: list[str]) -> str:
-        return "\n\n".join([
-            self._task(spec),
-            "CURRENT PLAN:\n" + plan.model_dump_json(indent=1),
-            f"VERIFIED: the first {n} steps passed their checks.",
-            "FILES IN THE VERIFIED TREE:\n" + ("\n".join(files[:300]) or "(empty)"),
-            f"Expand milestone {mid!r}: return the whole plan, the first {n} steps unchanged, with detailed "
-            f"steps for {mid!r} appended. You may revise the outlines of later milestones.",
-        ])
+    def _expand_prompt(
+        self, spec: TaskSpec, plan: Plan, n: int, mid: str, history: list[dict[str, Any]], files: list[str]
+    ) -> str:
+        return "\n\n".join(
+            [
+                self._task(spec),
+                "CURRENT PLAN:\n" + plan.model_dump_json(indent=1),
+                f"VERIFIED: the first {n} steps passed their checks.",
+                "FILES IN THE VERIFIED TREE:\n" + ("\n".join(files[:300]) or "(empty)"),
+                f"Expand milestone {mid!r}: return the whole plan, the first {n} steps unchanged, with detailed "
+                f"steps for {mid!r} appended. You may revise the outlines of later milestones.",
+            ]
+        )
 
-    def _replan_prompt(self, spec: TaskSpec, plan: Plan, n: int, failures: list[str], files: list[str]) -> str:
+    def _replan_prompt(
+        self, spec: TaskSpec, plan: Plan, n: int, failures: list[str], files: list[str]
+    ) -> str:
         failed = plan.steps[n]
-        return "\n\n".join([
-            self._task(spec),
-            "CURRENT PLAN:\n" + plan.model_dump_json(indent=1),
-            f"VERIFIED: the first {n} steps passed their checks.",
-            "FILES IN THE VERIFIED TREE:\n" + ("\n".join(files[:300]) or "(empty)"),
-            f"Step {n + 1} ({failed.id!r}) kept failing its checks after every repair. Last failures:\n"
-            "<untrusted>\n" + "\n".join(failures[:20]) + "\n</untrusted>",
-            f"Return the whole plan with the first {n} steps unchanged and a different step {n + 1}: split it, "
-            "make its instructions or expected output clearer, or fix a plan check that is itself wrong.",
-        ])
+        return "\n\n".join(
+            [
+                self._task(spec),
+                "CURRENT PLAN:\n" + plan.model_dump_json(indent=1),
+                f"VERIFIED: the first {n} steps passed their checks.",
+                "FILES IN THE VERIFIED TREE:\n" + ("\n".join(files[:300]) or "(empty)"),
+                f"Step {n + 1} ({failed.id!r}) kept failing its checks after every repair. Last failures:\n"
+                "<untrusted>\n" + "\n".join(failures[:20]) + "\n</untrusted>",
+                f"Return the whole plan with the first {n} steps unchanged and a different step {n + 1}: split it, "
+                "make its instructions or expected output clearer, or fix a plan check that is itself wrong.",
+            ]
+        )
 
 
 def to_step_spec(s: PlanStep, plan: Plan, index: int) -> StepSpec:
     instructions = s.instructions.strip() + f"\n\nEXPECTED OUTPUT: {s.expected_output.strip()}"
     if s.plan_checks:
-        instructions += "\n\nThe gate will run these commands from the project root; all must exit 0:\n" + "\n".join(
-            f"  {c}" for c in s.plan_checks)
+        instructions += (
+            "\n\nThe gate will run these commands from the project root; all must exit 0:\n"
+            + "\n".join(f"  {c}" for c in s.plan_checks)
+        )
     return StepSpec(
         title=s.title,
         instructions=instructions,

@@ -67,7 +67,9 @@ def render_transcript(messages: list[dict[str, Any]]) -> str:
             if kind == "text" and b.get("text"):
                 out.append(f"{m['role'].upper()}:\n{b['text']}")
             elif kind == "tool_use":
-                out.append(f"TOOL CALL [{b['id']}] {b['name']} {json.dumps(b.get('input', {}), sort_keys=True)}")
+                out.append(
+                    f"TOOL CALL [{b['id']}] {b['name']} {json.dumps(b.get('input', {}), sort_keys=True)}"
+                )
             elif kind == "tool_result":
                 body = b.get("content")
                 body = body if isinstance(body, str) else _text(body or [])
@@ -114,8 +116,14 @@ def parse_tool_answer(answer: Any, messages: list[dict[str, Any]]) -> list[dict[
                 raise ValueError
         except (ValueError, TypeError):
             args = {"_unparsed": str(raw)[:2000]}  # the tool rejects it and the model sees why
-        blocks.append({"type": "tool_use", "id": f"toolu_cli_{seed}_{turn}_{n}", "name": call.get("name", ""),
-                       "input": args})
+        blocks.append(
+            {
+                "type": "tool_use",
+                "id": f"toolu_cli_{seed}_{turn}_{n}",
+                "name": call.get("name", ""),
+                "input": args,
+            }
+        )
     return blocks
 
 
@@ -133,9 +141,22 @@ class ClaudeCliProvider:
         if tools:
             system += render_tools(tools)
             schema = tool_schema(tools)
-        cmd = [self.binary, "-p", "--model", request["model"], "--system-prompt", system, "--tools", "",
-               "--setting-sources", "", "--strict-mcp-config", "--no-session-persistence",
-               "--output-format", "json"]
+        cmd = [
+            self.binary,
+            "-p",
+            "--model",
+            request["model"],
+            "--system-prompt",
+            system,
+            "--tools",
+            "",
+            "--setting-sources",
+            "",
+            "--strict-mcp-config",
+            "--no-session-persistence",
+            "--output-format",
+            "json",
+        ]
         if request.get("effort"):
             cmd += ["--effort", str(request["effort"])]
         if schema is not None:
@@ -153,7 +174,9 @@ class ClaudeCliProvider:
         try:
             d = json.loads(proc.stdout)
         except json.JSONDecodeError as e:
-            raise ProviderUnavailable(f"claude CLI exit {proc.returncode}: {(proc.stderr or proc.stdout)[-500:]}") from e
+            raise ProviderUnavailable(
+                f"claude CLI exit {proc.returncode}: {(proc.stderr or proc.stdout)[-500:]}"
+            ) from e
         status = d.get("api_error_status")
         if d.get("is_error") and (not status or int(status) >= 429):
             raise ProviderUnavailable(f"claude CLI error ({status}): {str(d.get('result'))[:300]}")
@@ -171,8 +194,15 @@ class ClaudeCliProvider:
         return ProviderResponse(
             content=content,
             stop_reason=stop,
-            usage={k: int(usage.get(k) or 0) for k in ("input_tokens", "output_tokens", "cache_read_input_tokens",
-                                                         "cache_creation_input_tokens")},
+            usage={
+                k: int(usage.get(k) or 0)
+                for k in (
+                    "input_tokens",
+                    "output_tokens",
+                    "cache_read_input_tokens",
+                    "cache_creation_input_tokens",
+                )
+            },
             model=request["model"],
             cost_usd=float(d.get("total_cost_usd") or 0.0),
         )

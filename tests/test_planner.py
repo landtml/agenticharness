@@ -13,9 +13,17 @@ BAD_MUL = "def mul(a, b):\n    return a + b\n"
 
 
 def pstep(id, milestone="m1", **kw):
-    d = dict(id=id, milestone=milestone, title=id, instructions=f"Write {id}.py",
-             expected_output=f"{id}.py with {id}(a, b)", files=[f"{id}.py"],
-             plan_checks=[f'{PY} -c "from {id} import {id}"'], spec_checks=[], effort="low")
+    d = dict(
+        id=id,
+        milestone=milestone,
+        title=id,
+        instructions=f"Write {id}.py",
+        expected_output=f"{id}.py with {id}(a, b)",
+        files=[f"{id}.py"],
+        plan_checks=[f'{PY} -c "from {id} import {id}"'],
+        spec_checks=[],
+        effort="low",
+    )
     d.update(kw)
     return PlanStep(**d)
 
@@ -49,8 +57,12 @@ class PlannerProvider(ScriptedProvider):
             text = item if isinstance(item, str) else item.model_dump_json()
             from urh.gateway import ProviderResponse
 
-            return ProviderResponse([{"type": "text", "text": text}], "end_turn",
-                                    {"input_tokens": 500, "output_tokens": 300}, request["model"])
+            return ProviderResponse(
+                [{"type": "text", "text": text}],
+                "end_turn",
+                {"input_tokens": 500, "output_tokens": 300},
+                request["model"],
+            )
         first = request["messages"][0]["content"]
         if len(request["messages"]) == 1:
             self.worker_efforts.append(request["effort"])
@@ -69,10 +81,18 @@ class PlannerProvider(ScriptedProvider):
         for n, a in enumerate(turns[turn]):
             tid = f"toolu_m{self.calls}_{n}"
             if "write" in a:
-                content.append({"type": "tool_use", "id": tid, "name": "write_file",
-                                "input": {"path": a["write"], "content": a["content"]}})
+                content.append(
+                    {
+                        "type": "tool_use",
+                        "id": tid,
+                        "name": "write_file",
+                        "input": {"path": a["write"], "content": a["content"]},
+                    }
+                )
             elif "finish" in a:
-                content.append({"type": "tool_use", "id": tid, "name": "finish", "input": {"summary": a["finish"]}})
+                content.append(
+                    {"type": "tool_use", "id": tid, "name": "finish", "input": {"summary": a["finish"]}}
+                )
         return ProviderResponse(content, "tool_use", {}, request["model"])
 
 
@@ -90,6 +110,7 @@ def make(tmp_path):
     def _make(script, plans, **cfg):
         provider = PlannerProvider(script, plans)
         return Harness(str(tmp_path / "home"), provider, config=fast_config(**cfg)), provider
+
     return _make
 
 
@@ -101,14 +122,19 @@ def test_one_planner_call_drives_every_step(make, hidden):
     assert roles.count("manager") == 1
     assert [e["why"] for e in h.journal.events(rid) if e["kind"] == "plan"] == ["plan"]
     # The worker sees its expected output and the gate's plan checks; planner prompts mark the goal untrusted.
-    assert "<untrusted>" in p.planner_prompts[0] and "TASK CHECKS (spec_checks): add, mul" in p.planner_prompts[0]
+    assert (
+        "<untrusted>" in p.planner_prompts[0]
+        and "TASK CHECKS (spec_checks): add, mul" in p.planner_prompts[0]
+    )
     assert p.worker_efforts == ["low", "low"]
 
 
 def test_milestones_expand_one_at_a_time_from_verified_facts(make, hidden):
     first = mplan([pstep("add", spec_checks=["add"])], milestones=("m1", "m2"))
-    second = mplan([pstep("add", spec_checks=["add"]), pstep("mul", "m2", spec_checks=["add", "mul"])],
-                   milestones=("m1", "m2"))
+    second = mplan(
+        [pstep("add", spec_checks=["add"]), pstep("mul", "m2", spec_checks=["add", "mul"])],
+        milestones=("m1", "m2"),
+    )
     h, p = make(steps_script(), [first, second])
     rid = h.submit(make_spec(hidden, steps=None))
     assert h.run(rid) == "done"
@@ -135,8 +161,12 @@ def test_retry_with_errors_recovers(make, hidden):
 
 
 def test_exhausted_repairs_replan_instead_of_parking(make, hidden):
-    fixed = mplan([pstep("add", spec_checks=["add"]),
-                   pstep("mul", instructions="Write mul.py (v2): multiply", spec_checks=["add", "mul"])])
+    fixed = mplan(
+        [
+            pstep("add", spec_checks=["add"]),
+            pstep("mul", instructions="Write mul.py (v2): multiply", spec_checks=["add", "mul"]),
+        ]
+    )
     script = steps_script(**{"2": [[{"write": "mul.py", "content": BAD_MUL}], [{"finish": "mul"}]]})
     script["by_marker"] = {"(v2)": [[{"write": "mul.py", "content": MUL_PY}], [{"finish": "mul v2"}]]}
     h, p = make(script, [ONE, fixed])
@@ -173,16 +203,22 @@ def test_plan_errors():
     assert plan_errors(ONE, names) == []
     short_end = mplan([pstep("add", spec_checks=["add"])])
     assert any("last step must list every spec check" in e for e in plan_errors(short_end, names))
-    gap = mplan([pstep("a", "m1", spec_checks=["add"]), pstep("b", "m3", spec_checks=names)],
-                milestones=("m1", "m2", "m3"))
+    gap = mplan(
+        [pstep("a", "m1", spec_checks=["add"]), pstep("b", "m3", spec_checks=names)],
+        milestones=("m1", "m2", "m3"),
+    )
     assert any("earlier milestone has none" in e for e in plan_errors(gap, names))
     order = mplan([pstep("a", "m2"), pstep("b", "m1", spec_checks=names)], milestones=("m1", "m2"))
     assert any("out of milestone order" in e for e in plan_errors(order, names))
-    assert any("effort" in e for e in plan_errors(mplan([pstep("a", effort="max", spec_checks=names)]), names))
+    assert any(
+        "effort" in e for e in plan_errors(mplan([pstep("a", effort="max", spec_checks=names)]), names)
+    )
 
 
 def test_locked_prefix():
-    changed = mplan([pstep("add", spec_checks=["add"], effort="high"), pstep("mul", spec_checks=["add", "mul"])])
+    changed = mplan(
+        [pstep("add", spec_checks=["add"], effort="high"), pstep("mul", spec_checks=["add", "mul"])]
+    )
     assert locked_prefix_errors(ONE, changed, 1)
     assert locked_prefix_errors(ONE, changed, 0) == []
 

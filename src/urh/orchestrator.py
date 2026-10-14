@@ -318,7 +318,12 @@ class Harness:
                     )
                 except ValueError as e:  # the manager's answer could not be used (bad JSON, rejected plan)
                     return self._park(
-                        run_id, epoch, i, "plan", f"The manager could not plan step {i + 1}: {e}"[:1500], verified
+                        run_id,
+                        epoch,
+                        i,
+                        "plan",
+                        f"The manager could not plan step {i + 1}: {e}"[:1500],
+                        verified,
                     )
                 step_dict = self.journal.plan_step(run_id, epoch, i, proposed, manager.source)
             if step_dict.get("done"):
