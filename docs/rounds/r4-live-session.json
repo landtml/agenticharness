@@ -1,0 +1,59 @@
+{
+ "session": {
+  "id": "ses_5557a527410f4222",
+  "title": "slug",
+  "budget_usd": 1.5,
+  "messages": [
+   {
+    "seq": 1,
+    "text": "Create slug.py with slugify(text: str) -> str. Lowercase the text, replace every run of characters that are not a-z or 0-9 with a single hyphen, and strip leading and trailing hyphens. slugify('Hello, World!') == 'hello-world'. slugify('  --A  b--  ') == 'a-b'. slugify('') == ''.",
+    "checks": [
+     "basic",
+     "ascii_property"
+    ],
+    "run_id": "run_aef7feb35d0a4728",
+    "status": "done",
+    "spent_usd": 0.080237,
+    "verified_commit": "f021660f3c5b81e967bf38e40cc6eac8c19da2ab"
+   },
+   {
+    "seq": 2,
+    "text": "Extend slugify in slug.py: before applying the step 1 rules, decompose the text with unicodedata NFKD and drop every character that has no ASCII form (so accents disappear). slugify('Cr\u00e8me Br\u00fbl\u00e9e') == 'creme-brulee' and slugify('\u00c6r\u00f8') == 'r'. Keep step 1 behaviour unchanged.",
+    "checks": [
+     "basic",
+     "unicode",
+     "ascii_property",
+     "unicode_property"
+    ],
+    "run_id": "run_f29507327a954f17",
+    "status": "done",
+    "spent_usd": 0.059996,
+    "verified_commit": "372c6d101a28918c02063f7a7176c28c3a145f41"
+   }
+  ]
+ },
+ "stats": {
+  "runs": 2,
+  "by_status": {
+   "done": 2
+  },
+  "human_touches": 0,
+  "human_touches_per_run": 0.0,
+  "park_rate": 0.0,
+  "headless_done": 2,
+  "auto_resolved_parks": 0,
+  "parks_by_reason": {},
+  "cost_per_done_usd": 0.070116,
+  "calls_per_done": 4.0,
+  "calls_by_role": {
+   "manager": 4,
+   "worker": 4
+  },
+  "cache_hit_ratio": 0.9994
+ },
+ "seconds": 72,
+ "files": [
+  "README.md",
+  "slug.py"
+ ]
+}

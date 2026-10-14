@@ -1,0 +1,22 @@
+{
+ "ampersand_and": "Replaces the ampersand with the word and before slugging. Deviation: slugify('A & B') -> spec 'a-b', mutant 'a-and-b'",
+ "apostrophe_removed": "Apostrophes are deleted before separator collapsing, so contractions join into one word. Deviation: slugify(\"don't\") -> spec 'don-t', mutant 'dont'",
+ "camel_split": "Inserts a hyphen at lowercase-to-uppercase boundaries, so camelCase words are split. Deviation: slugify('helloWorld') -> spec 'helloworld', mutant 'hello-world'",
+ "collapse_max3": "Separator runs are collapsed in chunks of at most 3 characters, so longer runs yield several hyphens. Deviation: slugify('a....b') -> spec 'a-b', mutant 'a--b'",
+ "combining_only_drop": "Drops only combining marks; other non-ASCII letters survive the drop step and become separators. Deviation: slugify('a\\u20acb') -> spec 'ab', mutant 'a-b'",
+ "digit_prefix_n": "A slug starting with a digit gets an n- prefix, which is not in the spec. Deviation: slugify('1st place') -> spec '1st-place', mutant 'n-1st-place'",
+ "dot_preserved": "Full stop is treated as a word character, so dots survive into the slug. Deviation: slugify('v1.2') -> spec 'v1-2', mutant 'v1.2'",
+ "drop_digits": "Digits 0-9 are treated as separators instead of kept. Deviation: slugify('abc123') -> spec 'abc123', mutant 'abc'",
+ "eszett_expanded": "Sharp s is expanded to ss before the drop step, instead of being dropped. Deviation: slugify('Stra\\xdfe') -> spec 'strae', mutant 'strasse'",
+ "hyphen_runs_not_collapsed": "Hyphens are excluded from the separator class, so literal runs of hyphen are never collapsed. Deviation: slugify('a--b') -> spec 'a-b', mutant 'a--b'",
+ "latin1_only_decompose": "Applies NFKD only to characters below U+0100, so Latin Extended Additional letters with accents are dropped. Deviation: slugify('\\u1e03a') -> spec 'ba', mutant 'a'",
+ "letter_digit_split": "Inserts a hyphen at every letter-to-digit boundary, splitting alphanumeric tokens. Deviation: slugify('abc123') -> spec 'abc123', mutant 'abc-123'",
+ "nbsp_deleted": "No-break space is removed before normalization, so it joins the words it sat between. Deviation: slugify('a\\xa0b') -> spec 'a-b', mutant 'ab'",
+ "nfd_not_nfkd": "Uses NFD instead of NFKD, so compatibility ligatures such as the fi ligature are dropped rather than expanded. Deviation: slugify('\\ufb01ne') -> spec 'fine', mutant 'ne'",
+ "space_only_separator": "Only spaces separate words; other punctuation and hyphens are deleted rather than turned into hyphens. Deviation: slugify('a-b') -> spec 'a-b', mutant 'ab'",
+ "tab_preserved": "Tab characters are kept literally in the output instead of being turned into hyphens. Deviation: slugify('a\\tb') -> spec 'a-b', mutant 'a\\tb'",
+ "truncate_20_no_restrip": "Truncates the slug to 20 characters after stripping, so a cut can leave a trailing hyphen. Deviation: slugify('aaaaaaaaaaaaaaaaaaa b') -> spec 'aaaaaaaaaaaaaaaaaaa-b', mutant 'aaaaaaaaaaaaaaaaaaa-'",
+ "underscore_kept": "Uses \\W as the separator class, so underscore survives as a word character. Deviation: slugify('snake_case') -> spec 'snake-case', mutant 'snake_case'",
+ "unicode_dash_separator": "En dash and em dash are mapped to hyphen before the drop step, so they act as separators instead of being dropped. Deviation: slugify('a\\u2013b') -> spec 'ab', mutant 'a-b'",
+ "word_cap_three": "Only the first three words are kept; the rest of the slug is cut. Deviation: slugify('one two three four') -> spec 'one-two-three-four', mutant 'one-two-three'"
+}

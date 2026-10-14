@@ -1,0 +1,285 @@
+{
+ "v1_handwritten": {
+  "step": "unicode folding",
+  "checks": [
+   "basic",
+   "unicode",
+   "ascii_property",
+   "unicode_property"
+  ],
+  "reference_accepted": true,
+  "mutants": 15,
+  "accepted": [
+   "double_hyphen_kept",
+   "drops_digits",
+   "keeps_underscore",
+   "max_length_40",
+   "no_collapse",
+   "no_strip",
+   "spaces_only",
+   "strip_left_only",
+   "strip_spaces_not_hyphens"
+  ],
+  "false_accept_rate": 0.6,
+  "interval95": [
+   0.3575,
+   0.8018
+  ],
+  "verdicts": {
+   "reference": "pass",
+   "double_hyphen_kept": "pass",
+   "drops_digits": "pass",
+   "filter_before_lower": "fail",
+   "keeps_case": "fail",
+   "keeps_underscore": "pass",
+   "max_length_40": "pass",
+   "nfc_instead_of_nfkd": "fail",
+   "no_collapse": "pass",
+   "no_fold": "fail",
+   "no_strip": "pass",
+   "overfit_examples": "fail",
+   "spaces_only": "pass",
+   "strip_left_only": "pass",
+   "strip_spaces_not_hyphens": "pass",
+   "unicode_alnum": "fail"
+  },
+  "judge_model": "claude-haiku-5-5",
+  "spent_usd": 0.0159,
+  "unsure": []
+ },
+ "v1_blind_leaky": {
+  "step": "unicode folding",
+  "checks": [
+   "basic",
+   "unicode",
+   "ascii_property",
+   "unicode_property"
+  ],
+  "reference_accepted": true,
+  "mutants": 20,
+  "accepted": [],
+  "false_accept_rate": 0.0,
+  "interval95": [
+   0.0,
+   0.1611
+  ],
+  "verdicts": {
+   "reference": "pass",
+   "ampersand_and": "fail",
+   "apostrophe_removed": "fail",
+   "camel_split": "fail",
+   "collapse_max3": "fail",
+   "combining_only_drop": "fail",
+   "digit_prefix_n": "fail",
+   "dot_preserved": "fail",
+   "drop_digits": "fail",
+   "eszett_expanded": "fail",
+   "hyphen_runs_not_collapsed": "fail",
+   "latin1_only_decompose": "fail",
+   "letter_digit_split": "fail",
+   "nbsp_deleted": "fail",
+   "nfd_not_nfkd": "fail",
+   "space_only_separator": "fail",
+   "tab_preserved": "fail",
+   "truncate_20_no_restrip": "fail",
+   "underscore_kept": "fail",
+   "unicode_dash_separator": "fail",
+   "word_cap_three": "fail"
+  },
+  "judge_model": "claude-haiku-5-5",
+  "spent_usd": 0.0213,
+  "unsure": []
+ },
+ "v1_blind_clean": {
+  "step": "unicode folding",
+  "checks": [
+   "basic",
+   "unicode",
+   "ascii_property",
+   "unicode_property"
+  ],
+  "reference_accepted": true,
+  "mutants": 20,
+  "accepted": [
+   "apostrophe_removed",
+   "camel_split",
+   "digit_prefix_n",
+   "dot_preserved",
+   "drop_digits",
+   "hyphen_runs_not_collapsed",
+   "letter_digit_split",
+   "space_only_separator",
+   "tab_preserved",
+   "underscore_kept"
+  ],
+  "false_accept_rate": 0.5,
+  "interval95": [
+   0.2993,
+   0.7007
+  ],
+  "verdicts": {
+   "reference": "pass",
+   "ampersand_and": "fail",
+   "apostrophe_removed": "pass",
+   "camel_split": "pass",
+   "collapse_max3": "unsure",
+   "combining_only_drop": "fail",
+   "digit_prefix_n": "pass",
+   "dot_preserved": "pass",
+   "drop_digits": "pass",
+   "eszett_expanded": "unsure",
+   "hyphen_runs_not_collapsed": "pass",
+   "latin1_only_decompose": "fail",
+   "letter_digit_split": "pass",
+   "nbsp_deleted": "unsure",
+   "nfd_not_nfkd": "fail",
+   "space_only_separator": "pass",
+   "tab_preserved": "pass",
+   "truncate_20_no_restrip": "unsure",
+   "underscore_kept": "pass",
+   "unicode_dash_separator": "unsure",
+   "word_cap_three": "unsure"
+  },
+  "judge_model": "claude-haiku-5-5",
+  "spent_usd": 0.0319,
+  "unsure": [
+   "collapse_max3",
+   "eszett_expanded",
+   "nbsp_deleted",
+   "truncate_20_no_restrip",
+   "unicode_dash_separator",
+   "word_cap_three"
+  ]
+ },
+ "v2_handwritten_run1": {
+  "step": "unicode folding",
+  "checks": [
+   "basic",
+   "unicode",
+   "ascii_property",
+   "unicode_property"
+  ],
+  "reference_accepted": true,
+  "mutants": 15,
+  "accepted": [],
+  "false_accept_rate": 0.0,
+  "interval95": [
+   0.0,
+   0.2039
+  ],
+  "verdicts": {
+   "reference": "pass",
+   "double_hyphen_kept": "fail",
+   "drops_digits": "fail",
+   "filter_before_lower": "fail",
+   "keeps_case": "fail",
+   "keeps_underscore": "fail",
+   "max_length_40": "fail",
+   "nfc_instead_of_nfkd": "fail",
+   "no_collapse": "fail",
+   "no_fold": "fail",
+   "no_strip": "fail",
+   "overfit_examples": "fail",
+   "spaces_only": "fail",
+   "strip_left_only": "fail",
+   "strip_spaces_not_hyphens": "fail",
+   "unicode_alnum": "fail"
+  },
+  "judge_model": "claude-haiku-5-5",
+  "spent_usd": 0.0199,
+  "unsure": []
+ },
+ "v2_handwritten_run2": {
+  "step": "unicode folding",
+  "checks": [
+   "basic",
+   "unicode",
+   "ascii_property",
+   "unicode_property"
+  ],
+  "reference_accepted": true,
+  "mutants": 15,
+  "accepted": [
+   "double_hyphen_kept"
+  ],
+  "false_accept_rate": 0.0667,
+  "interval95": [
+   0.0119,
+   0.2982
+  ],
+  "verdicts": {
+   "reference": "pass",
+   "double_hyphen_kept": "pass",
+   "drops_digits": "fail",
+   "filter_before_lower": "fail",
+   "keeps_case": "fail",
+   "keeps_underscore": "fail",
+   "max_length_40": "fail",
+   "nfc_instead_of_nfkd": "fail",
+   "no_collapse": "fail",
+   "no_fold": "fail",
+   "no_strip": "fail",
+   "overfit_examples": "fail",
+   "spaces_only": "fail",
+   "strip_left_only": "fail",
+   "strip_spaces_not_hyphens": "fail",
+   "unicode_alnum": "fail"
+  },
+  "judge_model": "claude-haiku-5-5",
+  "spent_usd": 0.0135,
+  "unsure": []
+ },
+ "v2_blind_clean": {
+  "step": "unicode folding",
+  "checks": [
+   "basic",
+   "unicode",
+   "ascii_property",
+   "unicode_property"
+  ],
+  "reference_accepted": true,
+  "mutants": 20,
+  "accepted": [],
+  "false_accept_rate": 0.0,
+  "interval95": [
+   0.0,
+   0.1611
+  ],
+  "verdicts": {
+   "reference": "pass",
+   "ampersand_and": "fail",
+   "apostrophe_removed": "fail",
+   "camel_split": "fail",
+   "collapse_max3": "fail",
+   "combining_only_drop": "fail",
+   "digit_prefix_n": "fail",
+   "dot_preserved": "fail",
+   "drop_digits": "fail",
+   "eszett_expanded": "fail",
+   "hyphen_runs_not_collapsed": "fail",
+   "latin1_only_decompose": "fail",
+   "letter_digit_split": "fail",
+   "nbsp_deleted": "fail",
+   "nfd_not_nfkd": "fail",
+   "space_only_separator": "fail",
+   "tab_preserved": "fail",
+   "truncate_20_no_restrip": "fail",
+   "underscore_kept": "fail",
+   "unicode_dash_separator": "fail",
+   "word_cap_three": "fail"
+  },
+  "judge_model": "claude-haiku-5-5",
+  "spent_usd": 0.034,
+  "unsure": []
+ },
+ "summary": {
+  "judge_model": "claude-haiku-5-5",
+  "v2_pooled_false_accepts": 1,
+  "v2_pooled_trials": 50,
+  "v2_pooled_interval95": [
+   0.0035,
+   0.105
+  ],
+  "total_spent_usd": 0.1365
+ }
+}

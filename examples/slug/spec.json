@@ -1,0 +1,93 @@
+{
+  "goal": "Implement a small slugify utility in slug.py",
+  "constraints": [
+    "Standard library only",
+    "Python 3.11+"
+  ],
+  "seed_dir": "seed",
+  "gate": {
+    "hidden_dir": "hidden",
+    "checks": [
+      {
+        "name": "basic",
+        "cmd": [
+          "python",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "_hidden/test_basic.py"
+        ]
+      },
+      {
+        "name": "unicode",
+        "cmd": [
+          "python",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "_hidden/test_unicode.py"
+        ]
+      },
+      {
+        "name": "ascii_property",
+        "cmd": [
+          "python",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "_hidden/test_property.py::test_ascii_property"
+        ]
+      },
+      {
+        "name": "unicode_property",
+        "cmd": [
+          "python",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "_hidden/test_property.py::test_unicode_property"
+        ]
+      }
+    ],
+    "protected": [
+      "_hidden/"
+    ]
+  },
+  "steps": [
+    {
+      "title": "basic slugify",
+      "instructions": "Create slug.py with slugify(text: str) -> str. Lowercase the text, replace every run of characters that are not a-z or 0-9 with a single hyphen, and strip leading and trailing hyphens. slugify('Hello, World!') == 'hello-world'. slugify('  --A  b--  ') == 'a-b'. slugify('') == ''.",
+      "files": [
+        "slug.py"
+      ],
+      "checks": [
+        "basic",
+        "ascii_property"
+      ]
+    },
+    {
+      "title": "unicode folding",
+      "instructions": "Extend slugify in slug.py: before applying the step 1 rules, decompose the text with unicodedata NFKD and drop every character that has no ASCII form (so accents disappear). slugify('Crème Brûlée') == 'creme-brulee' and slugify('Ærø') == 'r'. Keep step 1 behaviour unchanged.",
+      "files": [
+        "slug.py"
+      ],
+      "checks": [
+        "basic",
+        "unicode",
+        "ascii_property",
+        "unicode_property"
+      ]
+    }
+  ],
+  "budget_usd": 0.25,
+  "max_repairs": 2,
+  "max_worker_turns": 20
+}
